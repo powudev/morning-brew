@@ -8,10 +8,9 @@ test.describe("首頁", () => {
     await expect(page.locator("html")).toHaveAttribute("lang", "zh-Hant-TW");
     await expect(page.getByRole("heading", { level: 1, name: "Morning Brew" })).toBeVisible();
     await expect(page.getByRole("note")).toContainText("Demo project");
-    await expect(page.getByRole("main").getByRole("link", { name: "線上訂位" })).toHaveAttribute(
-      "href",
-      "/reserve/",
-    );
+    const ctas = page.getByRole("main").getByRole("link", { name: "線上訂位" });
+    expect(await ctas.count()).toBeGreaterThan(0);
+    for (const cta of await ctas.all()) await expect(cta).toHaveAttribute("href", "/reserve/");
   });
 
   test("評論標示為示範內容", async ({ page }) => {

@@ -14,12 +14,33 @@
   "email": "hello@example.com",
   "priceRange": "$$",
   "hours": [
-    { "label": "週一至週五", "days": ["Mo", "Tu", "We", "Th", "Fr"], "open": "07:30", "close": "18:00" },
-    { "label": "週六、週日", "days": ["Sa", "Su"], "open": "09:00", "close": "19:00" }
+    {
+      "label": "週一至週五",
+      "days": [
+        "Mo",
+        "Tu",
+        "We",
+        "Th",
+        "Fr"
+      ],
+      "open": "07:30",
+      "close": "18:00"
+    },
+    {
+      "label": "週六、週日",
+      "days": [
+        "Sa",
+        "Su"
+      ],
+      "open": "09:00",
+      "close": "19:00"
+    }
   ],
   "map": {
     "embedTitle": "Morning Brew 示範地圖位置",
-    "query": "Taipei 101"
+    "lat": 25.0336,
+    "lng": 121.565,
+    "note": "地圖位置僅為示範,並非真實店址"
   },
   "social": {
     "instagram": "https://www.instagram.com/"

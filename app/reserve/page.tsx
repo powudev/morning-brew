@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import PageHeader from "@/components/PageHeader";
 
 export const metadata: Metadata = {
   title: "線上訂位",
@@ -10,8 +11,10 @@ export const metadata: Metadata = {
 export default function ReservePage() {
   return (
     <>
-      <h1 className="font-display text-4xl font-bold text-espresso">線上訂位</h1>
-      <p className="mt-4">訂位表單建置中。示範專案,請勿填寫真實個資。</p>
+      <PageHeader title="線上訂位" lead="示範專案,請勿填寫真實個資。" />
+      <div className="mx-auto max-w-3xl px-4 py-12">
+        <p>訂位表單建置中。</p>
+      </div>
     </>
   );
 }

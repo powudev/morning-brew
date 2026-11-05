@@ -36,9 +36,16 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       className={`${inter.variable} ${playfair.variable} ${notoTc.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col font-sans">
+        <a
+          href="#main"
+          className="sr-only z-50 rounded bg-espresso px-4 py-3 text-cream focus:not-sr-only focus:fixed focus:left-4 focus:top-4"
+        >
+          跳到主要內容
+        </a>
         <DemoBanner />
         <Header />
-        <main id="main" className="mx-auto w-full max-w-5xl flex-1 px-4 py-10">
+        {/* tabIndex=-1:skip link 跳轉後焦點落在 main */}
+        <main id="main" tabIndex={-1} className="flex-1 focus:outline-none">
           {children}
         </main>
         <Footer />
