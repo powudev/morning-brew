@@ -1,0 +1,4 @@
+# Cloudflare Pages 專案設定(本機 `wrangler pages dev` 與部署共用)。機密不放這裡。
+name = "morning-brew"
+pages_build_output_dir = "out"
+compatibility_date = "2026-11-01"

@@ -1,0 +1,6 @@
+allowBuilds:
+  sharp: false
+  unrs-resolver: false
+  # wrangler 本機執行需要(esbuild 打包 Pages Function、workerd 是 Workers runtime)
+  esbuild: true
+  workerd: true

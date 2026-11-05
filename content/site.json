@@ -1,0 +1,27 @@
+{
+  "name": "Morning Brew",
+  "tagline": "一杯好咖啡,開啟好的一天",
+  "description": "Morning Brew 是一間虛構的社區咖啡店(示範專案),提供手沖、義式咖啡與每日現烤甜點,並可線上訂位。",
+  "demoNotice": "這是作品集示範專案(Demo project / fictional business),店家、地址、電話與評論皆為虛構。",
+  "address": {
+    "street": "示範路 1 號(虛構地址)",
+    "district": "示範區",
+    "city": "台北市",
+    "postalCode": "000",
+    "country": "TW"
+  },
+  "phone": "02-0000-0000",
+  "email": "hello@example.com",
+  "priceRange": "$$",
+  "hours": [
+    { "label": "週一至週五", "days": ["Mo", "Tu", "We", "Th", "Fr"], "open": "07:30", "close": "18:00" },
+    { "label": "週六、週日", "days": ["Sa", "Su"], "open": "09:00", "close": "19:00" }
+  ],
+  "map": {
+    "embedTitle": "Morning Brew 示範地圖位置",
+    "query": "Taipei 101"
+  },
+  "social": {
+    "instagram": "https://www.instagram.com/"
+  }
+}

@@ -1,0 +1,21 @@
+@import "tailwindcss";
+
+/* 品牌色(計畫 5.8);文字與背景組合需符合 WCAG AA */
+@theme {
+  --color-espresso: #3e2723;
+  --color-cream: #f5efe6;
+  --color-caramel: #c68b59;
+  --color-ink: #1f1f1f;
+  --font-sans: var(--font-inter), var(--font-noto-tc), system-ui, sans-serif;
+  --font-display: var(--font-playfair), var(--font-noto-tc), serif;
+}
+
+body {
+  background: var(--color-cream);
+  color: var(--color-ink);
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-caramel);
+  outline-offset: 2px;
+}
