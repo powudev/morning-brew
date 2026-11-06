@@ -11,9 +11,11 @@
     "test:watch": "vitest",
     "test:e2e": "pnpm build:e2e && playwright test",
     "typecheck": "tsc --noEmit",
-    "build:e2e": "NEXT_PUBLIC_TURNSTILE_SITE_KEY=1x00000000000000000000AA next build"
+    "build:e2e": "scripts/build-e2e.sh",
+    "test:integration": "vitest run --config vitest.integration.config.mts"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.119.0",
     "next": "16.4.5",
     "react": "19.3.0",
     "react-dom": "19.3.0",

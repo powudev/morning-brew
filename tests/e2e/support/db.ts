@@ -32,12 +32,23 @@ export const dateFor = (days: number) => addDays(todayInTaipei(), days);
 export const fixtureSlots = (lane: string) => ({ small: laneBase[lane] + 1, full: laneBase[lane] + 2 });
 export const concurrencySlotId = 990900;
 
+// 後台測試專用時段(不與訂位測試的 lane 共用,避免佔用名額)
+const adminDays: Record<string, number> = { desktop: 10, mobile: 11 };
+const adminBase: Record<string, number> = { desktop: 990500, mobile: 990600 };
+export const adminDate = (project: string) => dateFor(adminDays[project]);
+export const adminSlots = (project: string) => ({ early: adminBase[project] + 1, late: adminBase[project] + 2 });
+
 export function cleanup(): void {
   sql(`
     delete from public.reservations where email like '%@${E2E_EMAIL_DOMAIN}' or slot_id >= 990000;
     delete from public.time_slots where id >= 990000;
+    delete from auth.users where email like '%@${E2E_EMAIL_DOMAIN}';
   `);
 }
+
+// 後台測試帳號(密碼每次執行隨機產生,經 process.env 傳給 worker)
+export const STAFF_EMAIL = `staff@${E2E_EMAIL_DOMAIN}`;
+export const CUSTOMER_EMAIL = `customer@${E2E_EMAIL_DOMAIN}`;
 
 export function seedFixtures(): void {
   const rows: string[] = [];
@@ -47,6 +58,10 @@ export function seedFixtures(): void {
     rows.push(`(${small}, '${d}', '06:00', 2)`, `(${full}, '${d}', '06:30', 1)`);
   }
   rows.push(`(${concurrencySlotId}, '${dateFor(concurrencyDay)}', '06:00', 4)`);
+  for (const project of Object.keys(adminDays)) {
+    const { early, late } = adminSlots(project);
+    rows.push(`(${early}, '${adminDate(project)}', '06:00', 20)`, `(${late}, '${adminDate(project)}', '06:30', 20)`);
+  }
   sql(`
     insert into public.time_slots (id, slot_date, start_time, capacity) overriding system value
     values ${rows.join(",\n")};
