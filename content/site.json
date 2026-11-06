@@ -1,12 +1,25 @@
 {
   "name": "Morning Brew",
-  "tagline": "一杯好咖啡,開啟好的一天",
-  "description": "Morning Brew 是一間虛構的社區咖啡店(示範專案),提供手沖、義式咖啡與每日現烤甜點,並可線上訂位。",
-  "demoNotice": "這是作品集示範專案(Demo project / fictional business),店家、地址、電話與評論皆為虛構。",
+  "tagline": {
+    "en": "Good coffee for a good morning.",
+    "zh-tw": "一杯好咖啡,開啟好的一天"
+  },
+  "intro": {
+    "en": "A small neighborhood café: pour-over, espresso and pastries baked fresh every day.",
+    "zh-tw": "社區裡的小咖啡店:手沖、義式咖啡與每日現烤甜點。"
+  },
+  "description": {
+    "en": "Morning Brew is a fictional neighborhood coffee shop (demo project) serving pour-over and espresso coffee with freshly baked pastries, with online table reservations.",
+    "zh-tw": "Morning Brew 是一間虛構的社區咖啡店(示範專案),提供手沖、義式咖啡與每日現烤甜點,並可線上訂位。"
+  },
+  "demoNotice": {
+    "en": "This is a portfolio demo project (fictional business). The shop, address, phone number and reviews are not real.",
+    "zh-tw": "這是作品集示範專案(Demo project / fictional business),店家、地址、電話與評論皆為虛構。"
+  },
   "address": {
-    "street": "示範路 1 號(虛構地址)",
-    "district": "示範區",
-    "city": "台北市",
+    "street": { "en": "1 Demo Road (fictional address)", "zh-tw": "示範路 1 號(虛構地址)" },
+    "district": { "en": "Demo District", "zh-tw": "示範區" },
+    "city": { "en": "Taipei", "zh-tw": "台北市" },
     "postalCode": "000",
     "country": "TW"
   },
@@ -14,33 +27,17 @@
   "email": "hello@example.com",
   "priceRange": "$$",
   "hours": [
-    {
-      "label": "週一至週五",
-      "days": [
-        "Mo",
-        "Tu",
-        "We",
-        "Th",
-        "Fr"
-      ],
-      "open": "07:30",
-      "close": "18:00"
-    },
-    {
-      "label": "週六、週日",
-      "days": [
-        "Sa",
-        "Su"
-      ],
-      "open": "09:00",
-      "close": "19:00"
-    }
+    { "label": { "en": "Mon – Fri", "zh-tw": "週一至週五" }, "days": ["Mo", "Tu", "We", "Th", "Fr"], "open": "07:30", "close": "18:00" },
+    { "label": { "en": "Sat – Sun", "zh-tw": "週六、週日" }, "days": ["Sa", "Su"], "open": "09:00", "close": "19:00" }
   ],
   "map": {
-    "embedTitle": "Morning Brew 示範地圖位置",
+    "embedTitle": { "en": "Morning Brew demo map location", "zh-tw": "Morning Brew 示範地圖位置" },
+    "note": {
+      "en": "Map location is for demonstration only and is not a real shop address.",
+      "zh-tw": "地圖位置僅為示範,並非真實店址"
+    },
     "lat": 25.0336,
-    "lng": 121.565,
-    "note": "地圖位置僅為示範,並非真實店址"
+    "lng": 121.565
   },
   "social": {
     "instagram": "https://www.instagram.com/"

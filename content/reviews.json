@@ -1,8 +1,41 @@
 {
-  "notice": "以下評論為示範內容,非真實顧客評論。",
+  "notice": {
+    "en": "The reviews below are demo content, not real customer reviews.",
+    "zh-tw": "以下評論為示範內容,非真實顧客評論。"
+  },
   "items": [
-    { "author": "示範顧客 A", "rating": 5, "text": "拿鐵奶泡很細,可頌每天都很新鮮。(示範內容)" },
-    { "author": "示範顧客 B", "rating": 5, "text": "線上訂位很方便,週末不用排隊。(示範內容)" },
-    { "author": "示範顧客 C", "rating": 4, "text": "手沖選擇多,店員會耐心介紹豆子。(示範內容)" }
+    {
+      "author": {
+        "en": "Demo customer A",
+        "zh-tw": "示範顧客 A"
+      },
+      "rating": 5,
+      "text": {
+        "en": "The latte foam is lovely and the croissants are fresh every day. (demo content)",
+        "zh-tw": "拿鐵奶泡很細,可頌每天都很新鮮。(示範內容)"
+      }
+    },
+    {
+      "author": {
+        "en": "Demo customer B",
+        "zh-tw": "示範顧客 B"
+      },
+      "rating": 5,
+      "text": {
+        "en": "Booking online is so easy — no more queueing on weekends. (demo content)",
+        "zh-tw": "線上訂位很方便,週末不用排隊。(示範內容)"
+      }
+    },
+    {
+      "author": {
+        "en": "Demo customer C",
+        "zh-tw": "示範顧客 C"
+      },
+      "rating": 4,
+      "text": {
+        "en": "Lots of pour-over options, and the staff happily explain each bean. (demo content)",
+        "zh-tw": "手沖選擇多,店員會耐心介紹豆子。(示範內容)"
+      }
+    }
   ]
 }

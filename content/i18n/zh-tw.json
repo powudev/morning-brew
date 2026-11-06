@@ -1,0 +1,183 @@
+{
+  "meta": {
+    "defaultTitle": "Morning Brew | 咖啡店(示範專案)"
+  },
+  "skipLink": "跳到主要內容",
+  "nav": {
+    "label": "主選單",
+    "home": "首頁",
+    "menu": "菜單",
+    "about": "關於我們",
+    "reserve": "線上訂位"
+  },
+  "langSwitch": {
+    "label": "English",
+    "aria": "English version"
+  },
+  "footer": {
+    "hours": "營業時間",
+    "reserve": "線上訂位",
+    "privacy": "隱私權聲明"
+  },
+  "home": {
+    "metaTitle": "Morning Brew | 咖啡店(示範專案)",
+    "ctaReserve": "線上訂位",
+    "ctaMenu": "看菜單",
+    "featuresTitle": "我們的特色",
+    "features": [
+      {
+        "title": "當日烘焙的咖啡豆",
+        "text": "小批次烘焙,讓每一杯都喝得到豆子最好的狀態。"
+      },
+      {
+        "title": "每天現烤的甜點",
+        "text": "可頌、司康與乳酪蛋糕,早上出爐、當天賣完。"
+      },
+      {
+        "title": "線上訂位不用等",
+        "text": "週末也能先預約座位,到店直接入座。"
+      }
+    ],
+    "featuredTitle": "精選菜單",
+    "fullMenu": "看完整菜單",
+    "visitTitle": "營業時間與位置",
+    "hoursCaption": "營業時間",
+    "address": "地址",
+    "phone": "電話(示範號碼)",
+    "reviewsTitle": "顧客評論",
+    "rating": "評分 {rating} / 5",
+    "ctaTitle": "今天就來坐坐",
+    "ctaText": "先訂好位子,到店就有一杯熱咖啡等你。"
+  },
+  "map": {
+    "loadNote": "地圖由 OpenStreetMap 提供,點擊後才會載入。",
+    "load": "載入地圖",
+    "openExternal": "在 OpenStreetMap 開啟",
+    "newWindow": "(另開新視窗)"
+  },
+  "menu": {
+    "metaTitle": "菜單",
+    "metaDescription": "Morning Brew(示範專案)的義式咖啡、手沖、非咖啡飲品與甜點菜單。",
+    "title": "菜單",
+    "lead": "所有飲品可換燕麥奶(+NT$20)。價格為示範內容。",
+    "categoriesLabel": "菜單分類"
+  },
+  "about": {
+    "metaTitle": "關於我們",
+    "metaDescription": "Morning Brew(示範專案)的品牌故事。",
+    "title": "關於我們",
+    "lead": "這是為作品集打造的虛構咖啡店,以下品牌故事皆為示範內容。",
+    "storyTitle": "我們的故事",
+    "story": [
+      "Morning Brew 想像的是一間社區裡的小店:早上替趕著上班的人準備一杯穩定好喝的拿鐵,週末讓朋友坐下來,配著剛出爐的可頌慢慢聊天。",
+      "我們相信好咖啡不需要很複雜,只需要新鮮的豆子、細心的萃取,和一個讓人想多坐一會兒的空間。"
+    ],
+    "valuesTitle": "我們的堅持",
+    "values": [
+      {
+        "title": "穩定",
+        "text": "每天開店前校正磨豆機與萃取參數,讓第一杯和最後一杯一樣好喝。"
+      },
+      {
+        "title": "新鮮",
+        "text": "咖啡豆小批次烘焙、甜點每天現烤,當天沒賣完的不留到隔天。"
+      },
+      {
+        "title": "舒服",
+        "text": "座位之間留足空間,週末開放線上訂位,不用在門口排隊。"
+      }
+    ],
+    "cta": "線上訂位"
+  },
+  "privacy": {
+    "metaTitle": "隱私權聲明",
+    "metaDescription": "Morning Brew(示範專案)如何處理訂位資料。",
+    "title": "隱私權聲明",
+    "lead": "本網站為作品集示範專案(Demo project / fictional business)。",
+    "items": [
+      {
+        "title": "收集哪些資料",
+        "text": "訂位表單收集姓名、Email、電話(選填)、人數、日期、時段與備註,僅用於示範訂位流程。"
+      },
+      {
+        "title": "資料存在哪裡",
+        "text": "資料儲存於 Supabase 資料庫。資料庫設有存取權限控管(Row Level Security),只有店家帳號可以查看訂位。"
+      },
+      {
+        "title": "防止濫用",
+        "text": "表單使用 Cloudflare Turnstile 驗證送出者不是機器人。"
+      },
+      {
+        "title": "第三方服務",
+        "text": "首頁地圖由 OpenStreetMap 提供,只有在您按下「載入地圖」後才會連線。"
+      },
+      {
+        "title": "請勿輸入真實資料",
+        "text": "本網站為作品集示範專案,請勿輸入真實個人資料;示範資料會定期清除。"
+      }
+    ]
+  },
+  "reserve": {
+    "metaTitle": "線上訂位",
+    "metaDescription": "線上預約 Morning Brew(示範專案)的座位。",
+    "title": "線上訂位",
+    "lead": "可預約今天起 30 天內的座位。示範專案,請勿填寫真實個資。"
+  },
+  "done": {
+    "metaTitle": "訂位已送出",
+    "title": "已收到您的訂位",
+    "lead": "店家確認後,訂位狀態會更新。(示範專案,不會真的保留座位)",
+    "home": "回首頁"
+  },
+  "form": {
+    "labels": {
+      "name": "姓名",
+      "email": "Email",
+      "phone": "電話(選填)",
+      "partySize": "人數",
+      "date": "日期",
+      "slots": "時段",
+      "note": "備註(選填)"
+    },
+    "partyOne": "1 位",
+    "partyMany": "{n} 位",
+    "pickDateFirst": "請先選擇日期",
+    "loadingSlots": "載入時段中…",
+    "slotsError": "無法載入時段,請稍後再試。",
+    "noSlots": "這天沒有可預約的時段,請改選其他日期。",
+    "slotRemaining": "{time}(剩 {n} 位)",
+    "slotFull": "{time}(已額滿)",
+    "slotNotEnough": "{time}(名額不足,剩 {n} 位)",
+    "submit": "送出訂位",
+    "submitting": "送出中…",
+    "turnstileMissing": "尚未設定 Turnstile site key。",
+    "errors": {
+      "name_required": "請輸入姓名",
+      "name_too_long": "姓名最多 100 字",
+      "email_required": "請輸入 Email",
+      "email_invalid": "Email 格式不正確",
+      "email_too_long": "Email 太長",
+      "phone_invalid": "電話格式不正確",
+      "phone_too_long": "電話最多 30 字",
+      "party_size_invalid": "人數需介於 1–8 人",
+      "date_required": "請選擇日期",
+      "slot_required": "請選擇時段",
+      "note_too_long": "備註最多 500 字",
+      "turnstile_required": "請完成驗證",
+      "invalid_form": "表單資料有誤,請重新整理頁面。"
+    },
+    "server": {
+      "SLOT_FULL": "這個時段剛剛額滿了,請改選其他時段。",
+      "SLOT_NOT_AVAILABLE": "這個時段目前無法預約,請改選其他時段。",
+      "SLOT_IN_PAST": "這個時段已經過了,請改選其他時段。",
+      "INVALID_DATE": "這個日期無法預約(可預約今天起 30 天內)。",
+      "TURNSTILE_FAILED": "驗證失敗,請重新完成驗證後再送出。",
+      "generic": "系統忙碌中,請稍後再試。"
+    }
+  },
+  "notFound": {
+    "title": "找不到這個頁面",
+    "lead": "這頁可能已移除,或網址打錯了。",
+    "home": "回中文首頁"
+  }
+}

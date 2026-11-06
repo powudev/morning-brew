@@ -16,7 +16,7 @@ describe("serializeJsonLd", () => {
 });
 
 describe("cafeJsonLd", () => {
-  const ld = cafeJsonLd();
+  const ld = cafeJsonLd("en");
 
   it("使用 schema.org 的 CafeOrCoffeeShop 型別", () => {
     expect(ld["@context"]).toBe("https://schema.org");
@@ -29,7 +29,7 @@ describe("cafeJsonLd", () => {
     expect(ld.telephone).toBe(site.phone);
     expect(ld.address).toMatchObject({
       "@type": "PostalAddress",
-      streetAddress: site.address.street,
+      streetAddress: site.address.street.en,
       addressCountry: site.address.country,
     });
   });
@@ -43,5 +43,19 @@ describe("cafeJsonLd", () => {
       closes: "18:00",
     });
     expect(ld.openingHoursSpecification[1].dayOfWeek).toEqual(["Saturday", "Sunday"]);
+  });
+});
+
+describe("cafeJsonLd 語系", () => {
+  it("英文版用英文說明與網址,繁中版用中文說明與 /zh-tw/ 網址", () => {
+    const en = cafeJsonLd("en");
+    const zh = cafeJsonLd("zh-tw");
+    expect(en.description).toBe(site.description.en);
+    expect(en.inLanguage).toBe("en");
+    expect(en.url).toMatch(/\/$/);
+    expect(zh.description).toBe(site.description["zh-tw"]);
+    expect(zh.inLanguage).toBe("zh-Hant-TW");
+    expect(zh.url).toMatch(/\/zh-tw\/$/);
+    expect(zh.address.streetAddress).toBe(site.address.street["zh-tw"]);
   });
 });

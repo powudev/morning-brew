@@ -1,0 +1,183 @@
+{
+  "meta": {
+    "defaultTitle": "Morning Brew | Coffee shop (demo project)"
+  },
+  "skipLink": "Skip to main content",
+  "nav": {
+    "label": "Main menu",
+    "home": "Home",
+    "menu": "Menu",
+    "about": "About",
+    "reserve": "Reserve"
+  },
+  "langSwitch": {
+    "label": "中文",
+    "aria": "繁體中文版本"
+  },
+  "footer": {
+    "hours": "Opening hours",
+    "reserve": "Reserve a table",
+    "privacy": "Privacy policy"
+  },
+  "home": {
+    "metaTitle": "Morning Brew | Coffee shop (demo project)",
+    "ctaReserve": "Reserve a table",
+    "ctaMenu": "See the menu",
+    "featuresTitle": "Why Morning Brew",
+    "features": [
+      {
+        "title": "Freshly roasted beans",
+        "text": "Roasted in small batches so every cup tastes the beans at their best."
+      },
+      {
+        "title": "Pastries baked daily",
+        "text": "Croissants, scones and cheesecake — out of the oven every morning, gone by evening."
+      },
+      {
+        "title": "Book online, skip the line",
+        "text": "Reserve a table ahead of time, even on weekends, and walk straight in."
+      }
+    ],
+    "featuredTitle": "Featured menu",
+    "fullMenu": "See the full menu",
+    "visitTitle": "Hours & location",
+    "hoursCaption": "Opening hours",
+    "address": "Address",
+    "phone": "Phone (demo number)",
+    "reviewsTitle": "Reviews",
+    "rating": "Rated {rating} out of 5",
+    "ctaTitle": "Come sit with us today",
+    "ctaText": "Book a table and a hot coffee will be waiting for you."
+  },
+  "map": {
+    "loadNote": "The map is provided by OpenStreetMap and only loads when you click.",
+    "load": "Load map",
+    "openExternal": "Open in OpenStreetMap",
+    "newWindow": "(opens in a new window)"
+  },
+  "menu": {
+    "metaTitle": "Menu",
+    "metaDescription": "Espresso, pour-over, non-coffee drinks and pastries at Morning Brew (demo project).",
+    "title": "Menu",
+    "lead": "Any drink can be made with oat milk (+NT$20). Prices are demo content.",
+    "categoriesLabel": "Menu categories"
+  },
+  "about": {
+    "metaTitle": "About us",
+    "metaDescription": "The story behind Morning Brew (demo project).",
+    "title": "About us",
+    "lead": "This is a fictional coffee shop built for a portfolio. The story below is demo content.",
+    "storyTitle": "Our story",
+    "story": [
+      "Morning Brew imagines a small shop in the neighborhood: a reliably good latte for people rushing to work, and a place for friends to linger over a fresh croissant on weekends.",
+      "We believe good coffee doesn't need to be complicated — just fresh beans, careful brewing, and a space that makes you want to stay a little longer."
+    ],
+    "valuesTitle": "What we care about",
+    "values": [
+      {
+        "title": "Consistency",
+        "text": "We calibrate the grinder and extraction every morning so the last cup is as good as the first."
+      },
+      {
+        "title": "Freshness",
+        "text": "Beans are roasted in small batches and pastries baked daily; nothing is kept for tomorrow."
+      },
+      {
+        "title": "Comfort",
+        "text": "Plenty of space between tables, and online booking on weekends so nobody queues at the door."
+      }
+    ],
+    "cta": "Reserve a table"
+  },
+  "privacy": {
+    "metaTitle": "Privacy policy",
+    "metaDescription": "How Morning Brew (demo project) handles reservation data.",
+    "title": "Privacy policy",
+    "lead": "This website is a portfolio demo project (fictional business).",
+    "items": [
+      {
+        "title": "What we collect",
+        "text": "The reservation form collects your name, email, phone (optional), party size, date, time slot and notes, only to demonstrate the booking flow."
+      },
+      {
+        "title": "Where it is stored",
+        "text": "Data is stored in a Supabase database protected by Row Level Security, so only staff accounts can view reservations."
+      },
+      {
+        "title": "Abuse prevention",
+        "text": "The form uses Cloudflare Turnstile to check that submissions come from a person, not a bot."
+      },
+      {
+        "title": "Third-party services",
+        "text": "The map on the home page is provided by OpenStreetMap and only connects after you click “Load map”."
+      },
+      {
+        "title": "Please don't enter real data",
+        "text": "This is a demo project. Please do not enter real personal information; demo data is cleared regularly."
+      }
+    ]
+  },
+  "reserve": {
+    "metaTitle": "Reserve a table",
+    "metaDescription": "Book a table at Morning Brew (demo project) online.",
+    "title": "Reserve a table",
+    "lead": "Book up to 30 days ahead. This is a demo project — please don't enter real personal information."
+  },
+  "done": {
+    "metaTitle": "Reservation received",
+    "title": "We've received your reservation",
+    "lead": "The status will be updated once the shop confirms. (Demo project — no table is actually held.)",
+    "home": "Back to home"
+  },
+  "form": {
+    "labels": {
+      "name": "Name",
+      "email": "Email",
+      "phone": "Phone (optional)",
+      "partySize": "Party size",
+      "date": "Date",
+      "slots": "Time",
+      "note": "Notes (optional)"
+    },
+    "partyOne": "1 guest",
+    "partyMany": "{n} guests",
+    "pickDateFirst": "Please choose a date first",
+    "loadingSlots": "Loading time slots…",
+    "slotsError": "Couldn't load time slots. Please try again later.",
+    "noSlots": "No time slots are available on this day. Please choose another date.",
+    "slotRemaining": "{time} ({n} left)",
+    "slotFull": "{time} (full)",
+    "slotNotEnough": "{time} (not enough seats, {n} left)",
+    "submit": "Submit reservation",
+    "submitting": "Sending…",
+    "turnstileMissing": "Turnstile site key is not configured.",
+    "errors": {
+      "name_required": "Please enter your name",
+      "name_too_long": "Name must be 100 characters or fewer",
+      "email_required": "Please enter your email",
+      "email_invalid": "Please enter a valid email address",
+      "email_too_long": "Email is too long",
+      "phone_invalid": "Please enter a valid phone number",
+      "phone_too_long": "Phone number must be 30 characters or fewer",
+      "party_size_invalid": "Party size must be between 1 and 8",
+      "date_required": "Please choose a date",
+      "slot_required": "Please choose a time",
+      "note_too_long": "Notes must be 500 characters or fewer",
+      "turnstile_required": "Please complete the verification",
+      "invalid_form": "Something is wrong with the form. Please reload the page."
+    },
+    "server": {
+      "SLOT_FULL": "This time slot just filled up. Please choose another time.",
+      "SLOT_NOT_AVAILABLE": "This time slot is not available. Please choose another time.",
+      "SLOT_IN_PAST": "This time slot has already passed. Please choose another time.",
+      "INVALID_DATE": "This date can't be booked (bookings open up to 30 days ahead).",
+      "TURNSTILE_FAILED": "Verification failed. Please complete the verification again and resubmit.",
+      "generic": "Something went wrong. Please try again later."
+    }
+  },
+  "notFound": {
+    "title": "Page not found",
+    "lead": "This page may have been removed, or the address is mistyped.",
+    "home": "Back to home"
+  }
+}

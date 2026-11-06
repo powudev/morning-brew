@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fieldErrors, reservationSchema } from "@/lib/reservation-schema";
+import { errorCodes, fieldErrors, reservationSchema } from "@/lib/reservation-schema";
 
 const valid = {
   name: " 王小明 ",
@@ -61,21 +61,38 @@ describe("reservationSchema", () => {
     const result = reservationSchema.safeParse({ ...valid, status: "confirmed" });
     expect(result.success).toBe(false);
   });
-  it("空白 email 顯示「請輸入 Email」,而不是格式錯誤", () => {
+  it("空白 email 回 email_required,而不是格式錯誤", () => {
     const result = reservationSchema.safeParse({ ...valid, email: "  " });
     expect(result.success).toBe(false);
-    if (!result.success) expect(fieldErrors(result.error).email).toBe("請輸入 Email");
+    if (!result.success) expect(fieldErrors(result.error).email).toBe("email_required");
   });
 });
 
 describe("fieldErrors", () => {
-  it("每個欄位回傳第一則中文錯誤訊息", () => {
+  it("每個欄位回傳第一則錯誤代碼(由前端依語系翻譯)", () => {
     const result = reservationSchema.safeParse({ ...valid, name: "", email: "x" });
     expect(result.success).toBe(false);
     if (!result.success) {
       const errors = fieldErrors(result.error);
-      expect(errors.name).toBe("請輸入姓名");
-      expect(errors.email).toBe("Email 格式不正確");
+      expect(errors.name).toBe("name_required");
+      expect(errors.email).toBe("email_invalid");
+    }
+  });
+
+  it("回傳的代碼都在 errorCodes 清單內", () => {
+    const result = reservationSchema.safeParse({
+      name: "",
+      email: "",
+      phone: "abc",
+      partySize: "9",
+      date: "x",
+      slotId: "",
+      note: "a".repeat(501),
+      turnstileToken: "",
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      for (const code of Object.values(fieldErrors(result.error))) expect(errorCodes).toContain(code);
     }
   });
 });

@@ -1,45 +1,75 @@
 import { z } from "zod";
 import { isIsoDate } from "@/lib/dates";
 
-// 前端表單與 Pages Function 共用同一份驗證規則;資料庫的 check constraint 是最後一道防線
-export const reservationSchema = z.strictObject({
-  name: z
-    .string({ error: "請輸入姓名" })
-    .trim()
-    .min(1, "請輸入姓名")
-    .max(100, "姓名最多 100 字"),
-  email: z
-    .string({ error: "請輸入 Email" })
-    .trim()
-    .min(1, "請輸入 Email")
-    .max(254, "Email 太長")
-    .pipe(z.email({ error: "Email 格式不正確" })),
-  phone: z
-    .string()
-    .trim()
-    .max(30, "電話最多 30 字")
-    .regex(/^[0-9+\-() ]*$/, "電話格式不正確")
-    .default(""),
-  partySize: z.coerce
-    .number({ error: "請選擇人數" })
-    .int("人數需介於 1–8 人")
-    .min(1, "人數需介於 1–8 人")
-    .max(8, "人數需介於 1–8 人"),
-  date: z.string({ error: "請選擇日期" }).refine(isIsoDate, "請選擇日期"),
-  slotId: z.coerce.number({ error: "請選擇時段" }).int("請選擇時段").positive("請選擇時段"),
-  note: z.string().trim().max(500, "備註最多 500 字").default(""),
-  turnstileToken: z.string({ error: "請完成驗證" }).min(1, "請完成驗證").max(2048, "請完成驗證"),
-});
+// 錯誤訊息是「代碼」,由前端依語系翻譯(content/i18n/*.json 的 form.errors)。
+// 前端表單與 Pages Function 共用同一份規則;資料庫的 check constraint 是最後一道防線。
+export const errorCodes = [
+  "name_required",
+  "name_too_long",
+  "email_required",
+  "email_invalid",
+  "email_too_long",
+  "phone_invalid",
+  "phone_too_long",
+  "party_size_invalid",
+  "date_required",
+  "slot_required",
+  "note_too_long",
+  "turnstile_required",
+  "invalid_form",
+] as const;
+export type ErrorCode = (typeof errorCodes)[number];
+
+const code = (c: ErrorCode) => c;
+
+export const reservationSchema = z.strictObject(
+  {
+    name: z
+      .string({ error: code("name_required") })
+      .trim()
+      .min(1, code("name_required"))
+      .max(100, code("name_too_long")),
+    email: z
+      .string({ error: code("email_required") })
+      .trim()
+      .min(1, code("email_required"))
+      .max(254, code("email_too_long"))
+      .pipe(z.email({ error: code("email_invalid") })),
+    phone: z
+      .string({ error: code("phone_invalid") })
+      .trim()
+      .max(30, code("phone_too_long"))
+      .regex(/^[0-9+\-() ]*$/, code("phone_invalid"))
+      .default(""),
+    partySize: z.coerce
+      .number({ error: code("party_size_invalid") })
+      .int(code("party_size_invalid"))
+      .min(1, code("party_size_invalid"))
+      .max(8, code("party_size_invalid")),
+    date: z.string({ error: code("date_required") }).refine(isIsoDate, code("date_required")),
+    slotId: z.coerce
+      .number({ error: code("slot_required") })
+      .int(code("slot_required"))
+      .positive(code("slot_required")),
+    note: z.string({ error: code("note_too_long") }).trim().max(500, code("note_too_long")).default(""),
+    turnstileToken: z
+      .string({ error: code("turnstile_required") })
+      .min(1, code("turnstile_required"))
+      .max(2048, code("turnstile_required")),
+  },
+  { error: code("invalid_form") },
+);
 
 export type ReservationInput = z.infer<typeof reservationSchema>;
-export type FieldErrors = Partial<Record<keyof ReservationInput | "_form", string>>;
+export type FieldErrors = Partial<Record<keyof ReservationInput | "_form", ErrorCode>>;
 
-/** 每個欄位取第一則錯誤;不屬於任何欄位的錯誤(例如多餘欄位)放在 _form */
+/** 每個欄位取第一則錯誤代碼;不屬於任何欄位的錯誤(例如多餘欄位)放在 _form */
 export function fieldErrors(error: z.ZodError): FieldErrors {
   const errors: FieldErrors = {};
   for (const issue of error.issues) {
     const key = (issue.path[0] ?? "_form") as keyof FieldErrors;
-    errors[key] ??= issue.message;
+    const message = (errorCodes as readonly string[]).includes(issue.message) ? issue.message : "invalid_form";
+    errors[key] ??= message as ErrorCode;
   }
   return errors;
 }

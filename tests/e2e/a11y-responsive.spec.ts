@@ -1,7 +1,9 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import { getDictionary, localePath, locales } from "./support/i18n";
 
-const pages = ["/", "/menu/", "/about/", "/reserve/", "/reserve/done/", "/privacy/", "/no-such-page/"];
+const paths = ["/", "/menu/", "/about/", "/reserve/", "/reserve/done/", "/privacy/"];
+const pages = [...locales.flatMap((l) => paths.map((p) => localePath(l, p))), "/no-such-page/", "/zh-tw/no-such-page/"];
 
 for (const path of pages) {
   test.describe(`${path}`, () => {
@@ -23,9 +25,7 @@ for (const path of pages) {
 
     test("按鈕與導覽連結的觸控目標至少 44px", async ({ page }) => {
       await page.goto(path);
-      const targets = page.locator(
-        "header a, footer a, main button, main a[data-cta]",
-      );
+      const targets = page.locator("header a, footer a, main button, main a[data-cta]");
       const count = await targets.count();
       expect(count).toBeGreaterThan(0);
       for (let i = 0; i < count; i++) {
@@ -37,22 +37,25 @@ for (const path of pages) {
   });
 }
 
-test.describe("鍵盤操作", () => {
-  test("第一個 Tab 停在「跳到主要內容」,按下後焦點移到 main", async ({ page }) => {
-    await page.goto("/menu/");
-    await page.keyboard.press("Tab");
-    const skip = page.getByRole("link", { name: "跳到主要內容" });
-    await expect(skip).toBeFocused();
-    await expect(skip).toBeVisible();
-    await page.keyboard.press("Enter");
-    await expect(page).toHaveURL(/#main$/);
-    await expect(page.locator("main")).toBeFocused();
-  });
+for (const locale of locales) {
+  const d = getDictionary(locale);
+  test.describe(`[${locale}] 鍵盤操作`, () => {
+    test("第一個 Tab 停在「跳到主要內容」,按下後焦點移到 main", async ({ page }) => {
+      await page.goto(localePath(locale, "/menu/"));
+      await page.keyboard.press("Tab");
+      const skip = page.getByRole("link", { name: d.skipLink });
+      await expect(skip).toBeFocused();
+      await expect(skip).toBeVisible();
+      await page.keyboard.press("Enter");
+      await expect(page).toHaveURL(/#main$/);
+      await expect(page.locator("main")).toBeFocused();
+    });
 
-  test("目前頁面在主選單標示 aria-current", async ({ page }) => {
-    await page.goto("/menu/");
-    await expect(
-      page.getByRole("navigation", { name: "主選單" }).getByRole("link", { name: "菜單" }),
-    ).toHaveAttribute("aria-current", "page");
+    test("目前頁面在主選單標示 aria-current", async ({ page }) => {
+      await page.goto(localePath(locale, "/menu/"));
+      await expect(
+        page.getByRole("navigation", { name: d.nav.label }).getByRole("link", { name: d.nav.menu }),
+      ).toHaveAttribute("aria-current", "page");
+    });
   });
-});
+}

@@ -1,4 +1,5 @@
 import { siteContent, siteUrl } from "@/lib/content";
+import { htmlLang, localePath, type Locale } from "@/lib/i18n";
 
 const dayMap: Record<string, string> = {
   Mo: "Monday",
@@ -10,23 +11,24 @@ const dayMap: Record<string, string> = {
   Su: "Sunday",
 };
 
-export function cafeJsonLd() {
+export function cafeJsonLd(locale: Locale) {
   const { name, description, address, phone, priceRange, hours } = siteContent;
   return {
     "@context": "https://schema.org",
     "@type": "CafeOrCoffeeShop",
     name,
-    description,
-    url: siteUrl,
+    description: description[locale],
+    inLanguage: htmlLang(locale),
+    url: `${siteUrl}${localePath(locale, "/")}`,
     telephone: phone,
     priceRange,
     servesCuisine: "Coffee",
     acceptsReservations: true,
     address: {
       "@type": "PostalAddress",
-      streetAddress: address.street,
-      addressLocality: address.district,
-      addressRegion: address.city,
+      streetAddress: address.street[locale],
+      addressLocality: address.district[locale],
+      addressRegion: address.city[locale],
       postalCode: address.postalCode,
       addressCountry: address.country,
     },

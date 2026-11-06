@@ -33,7 +33,15 @@ function loadTurnstile(): Promise<TurnstileApi> {
 }
 
 /** Cloudflare Turnstile。token 只在前端暫存,真正的驗證在 Pages Function。重設請改變 key 讓它重新掛載。 */
-export default function Turnstile({ onToken }: { onToken: (token: string | null) => void }) {
+export default function Turnstile({
+  onToken,
+  language,
+  missingKeyText,
+}: {
+  onToken: (token: string | null) => void;
+  language: "en" | "zh-tw";
+  missingKeyText: string;
+}) {
   const container = useRef<HTMLDivElement>(null);
   const onTokenRef = useRef(onToken);
   const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
@@ -52,7 +60,7 @@ export default function Turnstile({ onToken }: { onToken: (token: string | null)
         widgetId = api.render(container.current, {
           sitekey: siteKey,
           action: "reserve",
-          language: "zh-tw",
+          language,
           callback: (token: string) => onTokenRef.current(token),
           "expired-callback": () => onTokenRef.current(null),
           "error-callback": () => onTokenRef.current(null),
@@ -63,8 +71,8 @@ export default function Turnstile({ onToken }: { onToken: (token: string | null)
       cancelled = true;
       if (widgetId) window.turnstile?.remove(widgetId);
     };
-  }, [siteKey]);
+  }, [siteKey, language]);
 
-  if (!siteKey) return <p className="text-sm">尚未設定 Turnstile site key。</p>;
+  if (!siteKey) return <p className="text-sm">{missingKeyText}</p>;
   return <div ref={container} className="min-h-[65px]" />;
 }

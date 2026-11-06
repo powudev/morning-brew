@@ -3,6 +3,8 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { addDays, todayInTaipei } from "@/lib/dates";
+import { getDictionary, interpolate } from "@/lib/dictionary";
+import { localePath, locales, type Locale } from "@/lib/i18n";
 
 const push = vi.hoisted(() => vi.fn());
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
@@ -47,73 +49,85 @@ afterEach(() => {
   push.mockClear();
 });
 
-async function pickDate() {
-  fireEvent.change(screen.getByLabelText("日期"), { target: { value: date } });
-  await screen.findByRole("radio", { name: /08:00/ });
-}
+function setup(locale: Locale) {
+  const d = getDictionary(locale);
+  const f = d.form;
+  const label = f.labels;
+  const slotName = (time: string) => new RegExp(`^${time}`);
 
-async function fillValid(user: ReturnType<typeof userEvent.setup>) {
-  await user.type(screen.getByLabelText("姓名"), "王小明");
-  await user.type(screen.getByLabelText("Email"), "demo@example.com");
-  await pickDate();
-  await user.click(screen.getByRole("radio", { name: /08:00/ }));
-  await user.click(screen.getByRole("button", { name: "完成驗證(mock)" }));
+  async function pickDate() {
+    fireEvent.change(screen.getByLabelText(label.date), { target: { value: date } });
+    await screen.findByRole("radio", { name: slotName("08:00") });
+  }
+
+  async function fillValid(user: ReturnType<typeof userEvent.setup>) {
+    await user.type(screen.getByLabelText(label.name), "王小明");
+    await user.type(screen.getByLabelText(label.email), "demo@example.com");
+    await pickDate();
+    await user.click(screen.getByRole("radio", { name: slotName("08:00") }));
+    await user.click(screen.getByRole("button", { name: "完成驗證(mock)" }));
+  }
+
+  const submit = () => screen.getByRole("button", { name: f.submit });
+  return { d, f, label, slotName, pickDate, fillValid, submit };
 }
 
 const reserveCalls = () => fetchMock.mock.calls.filter(([url]) => String(url) === "/api/reserve");
 
-describe("ReservationForm", () => {
-  it("每個欄位都有標籤,日期限制在可訂範圍內", () => {
-    render(<ReservationForm />);
-    for (const label of ["姓名", "Email", "電話(選填)", "人數", "日期", "備註(選填)"]) {
-      expect(screen.getByLabelText(label)).toBeInTheDocument();
+describe.each(locales)("ReservationForm(%s)", (locale) => {
+  const { f, label, slotName, pickDate, fillValid, submit } = setup(locale);
+
+  it("每個欄位都有該語系的標籤,日期限制在可訂範圍內", () => {
+    render(<ReservationForm locale={locale} />);
+    for (const text of Object.values(label).filter((l) => l !== label.slots)) {
+      expect(screen.getByLabelText(text)).toBeInTheDocument();
     }
-    const dateInput = screen.getByLabelText("日期");
+    const dateInput = screen.getByLabelText(label.date);
     expect(dateInput).toHaveAttribute("min", todayInTaipei());
     expect(dateInput).toHaveAttribute("max", addDays(todayInTaipei(), 30));
   });
 
   it("未選日期前不顯示時段,並提示先選日期", () => {
-    render(<ReservationForm />);
+    render(<ReservationForm locale={locale} />);
     expect(screen.queryAllByRole("radio")).toHaveLength(0);
-    expect(screen.getByText("請先選擇日期")).toBeInTheDocument();
+    expect(screen.getByText(f.pickDateFirst)).toBeInTheDocument();
   });
 
-  it("空白送出顯示欄位錯誤、標示 aria-invalid,且不送出請求", async () => {
+  it("空白送出顯示該語系的欄位錯誤、標示 aria-invalid,且不送出請求", async () => {
     const user = userEvent.setup();
-    render(<ReservationForm />);
-    await user.click(screen.getByRole("button", { name: "送出訂位" }));
-    expect(await screen.findByText("請輸入姓名")).toBeInTheDocument();
-    expect(screen.getByLabelText("姓名")).toHaveAttribute("aria-invalid", "true");
-    expect(screen.getByLabelText("姓名")).toHaveAccessibleDescription("請輸入姓名");
-    expect(screen.getByText("請完成驗證")).toBeInTheDocument();
+    render(<ReservationForm locale={locale} />);
+    await user.click(submit());
+    expect(await screen.findByText(f.errors.name_required)).toBeInTheDocument();
+    expect(screen.getByLabelText(label.name)).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByLabelText(label.name)).toHaveAccessibleDescription(f.errors.name_required);
+    expect(screen.getByText(f.errors.turnstile_required)).toBeInTheDocument();
     expect(reserveCalls()).toHaveLength(0);
   });
 
   it("選日期後載入時段,額滿的時段不可選", async () => {
-    render(<ReservationForm />);
+    render(<ReservationForm locale={locale} />);
     await pickDate();
     expect(fetchMock).toHaveBeenCalledWith(`/api/slots?date=${date}`, expect.anything());
-    expect(screen.getByRole("radio", { name: /08:00.*剩 12 位/ })).toBeEnabled();
-    expect(screen.getByRole("radio", { name: /12:00.*已額滿/ })).toBeDisabled();
+    expect(screen.getByRole("radio", { name: interpolate(f.slotRemaining, { time: "08:00", n: 12 }) })).toBeEnabled();
+    expect(screen.getByRole("radio", { name: interpolate(f.slotFull, { time: "12:00" }) })).toBeDisabled();
   });
 
   it("人數超過剩餘名額的時段不可選", async () => {
     const user = userEvent.setup();
-    render(<ReservationForm />);
+    render(<ReservationForm locale={locale} />);
     await pickDate();
-    expect(screen.getByRole("radio", { name: /10:00/ })).toBeEnabled();
-    await user.selectOptions(screen.getByLabelText("人數"), "3");
-    expect(screen.getByRole("radio", { name: /10:00.*名額不足/ })).toBeDisabled();
+    expect(screen.getByRole("radio", { name: slotName("10:00") })).toBeEnabled();
+    await user.selectOptions(screen.getByLabelText(label.partySize), "3");
+    expect(screen.getByRole("radio", { name: interpolate(f.slotNotEnough, { time: "10:00", n: 2 }) })).toBeDisabled();
   });
 
-  it("送出成功後送出正確資料並前往完成頁", async () => {
+  it("送出成功後送出正確資料並前往該語系的完成頁", async () => {
     const user = userEvent.setup();
-    render(<ReservationForm />);
+    render(<ReservationForm locale={locale} />);
     await fillValid(user);
-    await user.type(screen.getByLabelText("備註(選填)"), "靠窗");
-    await user.click(screen.getByRole("button", { name: "送出訂位" }));
-    await waitFor(() => expect(push).toHaveBeenCalledWith("/reserve/done/"));
+    await user.type(screen.getByLabelText(label.note), "靠窗");
+    await user.click(submit());
+    await waitFor(() => expect(push).toHaveBeenCalledWith(localePath(locale, "/reserve/done/")));
     const [, init] = reserveCalls()[0];
     expect(new Headers(init!.headers).get("Content-Type")).toBe("application/json");
     expect(JSON.parse(init!.body as string)).toEqual({
@@ -131,47 +145,47 @@ describe("ReservationForm", () => {
   it("時段剛額滿(409)時顯示訊息並重新載入時段", async () => {
     const user = userEvent.setup();
     reserveReply = { status: 409, body: { error: "SLOT_FULL" } };
-    render(<ReservationForm />);
+    render(<ReservationForm locale={locale} />);
     await fillValid(user);
-    const slotCallsBefore = fetchMock.mock.calls.filter(([u]) => String(u).startsWith("/api/slots")).length;
-    await user.click(screen.getByRole("button", { name: "送出訂位" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("這個時段剛剛額滿了");
-    await waitFor(() =>
-      expect(fetchMock.mock.calls.filter(([u]) => String(u).startsWith("/api/slots")).length).toBe(slotCallsBefore + 1),
-    );
+    const slotCalls = () => fetchMock.mock.calls.filter(([u]) => String(u).startsWith("/api/slots")).length;
+    const before = slotCalls();
+    await user.click(submit());
+    expect(await screen.findByRole("alert")).toHaveTextContent(f.server.SLOT_FULL);
+    await waitFor(() => expect(slotCalls()).toBe(before + 1));
     expect(push).not.toHaveBeenCalled();
   });
 
   it("Turnstile 驗證失敗(403)時要求重新驗證", async () => {
     const user = userEvent.setup();
     reserveReply = { status: 403, body: { error: "TURNSTILE_FAILED" } };
-    render(<ReservationForm />);
+    render(<ReservationForm locale={locale} />);
     await fillValid(user);
-    await user.click(screen.getByRole("button", { name: "送出訂位" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("驗證失敗");
+    await user.click(submit());
+    expect(await screen.findByRole("alert")).toHaveTextContent(f.server.TURNSTILE_FAILED);
     // token 已失效:再送一次會被前端擋下,要求重新完成驗證
-    await user.click(screen.getByRole("button", { name: "送出訂位" }));
-    expect(await screen.findByText("請完成驗證")).toBeInTheDocument();
+    await user.click(submit());
+    expect(await screen.findByText(f.errors.turnstile_required)).toBeInTheDocument();
     expect(reserveCalls()).toHaveLength(1);
   });
 
-  it("伺服器回傳欄位錯誤(400)時顯示在對應欄位", async () => {
+  it("伺服器回傳欄位錯誤代碼(400)時以該語系顯示在對應欄位", async () => {
     const user = userEvent.setup();
-    reserveReply = { status: 400, body: { error: "VALIDATION", fields: { email: "Email 格式不正確" } } };
-    render(<ReservationForm />);
+    reserveReply = { status: 400, body: { error: "VALIDATION", fields: { email: "email_invalid" } } };
+    render(<ReservationForm locale={locale} />);
     await fillValid(user);
-    await user.click(screen.getByRole("button", { name: "送出訂位" }));
-    await waitFor(() => expect(screen.getByLabelText("Email")).toHaveAttribute("aria-invalid", "true"));
+    await user.click(submit());
+    await waitFor(() => expect(screen.getByLabelText(label.email)).toHaveAttribute("aria-invalid", "true"));
+    expect(screen.getByText(f.errors.email_invalid)).toBeInTheDocument();
   });
 
   it("其他錯誤顯示通用訊息,不顯示技術細節", async () => {
     const user = userEvent.setup();
     reserveReply = { status: 500, body: { error: "INTERNAL" } };
-    render(<ReservationForm />);
+    render(<ReservationForm locale={locale} />);
     await fillValid(user);
-    await user.click(screen.getByRole("button", { name: "送出訂位" }));
+    await user.click(submit());
     const alert = await screen.findByRole("alert");
-    expect(alert).toHaveTextContent("系統忙碌中");
+    expect(alert).toHaveTextContent(f.server.generic);
     expect(within(alert).queryByText(/INTERNAL/)).toBeNull();
   });
 });

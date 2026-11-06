@@ -18,13 +18,22 @@ describe("formatTimeRange", () => {
 });
 
 describe("tagLabel", () => {
-  it("回傳標籤的中文名稱", () => {
-    expect(tagLabel("vegan")).toBe("全素");
-    expect(tagLabel("decaf")).toBe("無/低咖啡因");
+  it("依語系回傳標籤名稱", () => {
+    expect(tagLabel("vegan", "zh-tw")).toBe("全素");
+    expect(tagLabel("decaf", "zh-tw")).toBe("無/低咖啡因");
+    expect(tagLabel("vegan", "en")).toBe("Vegan");
   });
 
   it("未知標籤回傳 undefined,不顯示原始代碼", () => {
-    expect(tagLabel("unknown-tag")).toBeUndefined();
+    expect(tagLabel("unknown-tag", "en")).toBeUndefined();
+  });
+});
+
+describe("formatAddress", () => {
+  it("英文由小到大、中文由大到小", async () => {
+    const { formatAddress } = await import("@/lib/format");
+    expect(formatAddress("en")).toBe("1 Demo Road (fictional address), Demo District, Taipei");
+    expect(formatAddress("zh-tw")).toBe("台北市示範區示範路 1 號(虛構地址)");
   });
 });
 

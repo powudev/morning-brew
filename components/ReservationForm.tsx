@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { useCallback, useRef, useState } from "react";
 import Turnstile from "@/components/Turnstile";
 import { bookingWindow } from "@/lib/dates";
+import { getDictionary, interpolate, type Dictionary } from "@/lib/dictionary";
+import { localePath, type Locale } from "@/lib/i18n";
 import { fieldErrors, reservationSchema, type FieldErrors } from "@/lib/reservation-schema";
 
 type Slot = { slotId: number; startTime: string; remaining: number };
@@ -15,26 +17,22 @@ type Values = typeof initialValues;
 // 前端欄位順序(驗證失敗時聚焦第一個錯誤欄位)
 const fieldOrder = ["name", "email", "phone", "partySize", "date", "slotId", "note"] as const;
 
-const GENERIC_ERROR = "系統忙碌中,請稍後再試。";
-const serverMessages: Record<string, string> = {
-  SLOT_FULL: "這個時段剛剛額滿了,請改選其他時段。",
-  SLOT_NOT_AVAILABLE: "這個時段目前無法預約,請改選其他時段。",
-  SLOT_IN_PAST: "這個時段已經過了,請改選其他時段。",
-  INVALID_DATE: "這個日期無法預約(可預約今天起 30 天內)。",
-  TURNSTILE_FAILED: "驗證失敗,請重新完成驗證後再送出。",
-};
 
 const inputClass =
   "mt-1 block min-h-11 w-full rounded-lg border border-espresso/30 bg-foam px-3 py-2 aria-[invalid=true]:border-red-700";
 
-function slotLabel(slot: Slot, partySize: number): string {
-  if (slot.remaining === 0) return `${slot.startTime}(已額滿)`;
-  if (slot.remaining < partySize) return `${slot.startTime}(名額不足,剩 ${slot.remaining} 位)`;
-  return `${slot.startTime}(剩 ${slot.remaining} 位)`;
+type FormText = Dictionary["form"];
+
+function slotLabel(f: FormText, slot: Slot, partySize: number): string {
+  const vars = { time: slot.startTime, n: slot.remaining };
+  if (slot.remaining === 0) return interpolate(f.slotFull, vars);
+  if (slot.remaining < partySize) return interpolate(f.slotNotEnough, vars);
+  return interpolate(f.slotRemaining, vars);
 }
 
-export default function ReservationForm() {
+export default function ReservationForm({ locale }: { locale: Locale }) {
   const router = useRouter();
+  const f = getDictionary(locale).form;
   const [{ min, max }] = useState(() => bookingWindow());
   const [values, setValues] = useState<Values>(initialValues);
   const [errors, setErrors] = useState<FieldErrors>({});
@@ -111,7 +109,7 @@ export default function ReservationForm() {
         body: JSON.stringify(parsed.data),
       });
       if (res.status === 201) {
-        router.push("/reserve/done/");
+        router.push(localePath(locale, "/reserve/done/"));
         return;
       }
       const data = (await res.json().catch(() => ({}))) as { error?: string; fields?: FieldErrors };
@@ -121,7 +119,8 @@ export default function ReservationForm() {
         focusFirstError(data.fields);
         return;
       }
-      setFormError((data.error && serverMessages[data.error]) || GENERIC_ERROR);
+      const server = f.server as Record<string, string>;
+      setFormError((data.error && server[data.error]) || f.server.generic);
       // 其餘情況 token 已送去驗證(只能用一次),需重新完成 Turnstile
       resetTurnstile();
       if (res.status === 409 || res.status === 422) {
@@ -129,7 +128,7 @@ export default function ReservationForm() {
         void loadSlots(values.date);
       }
     } catch {
-      setFormError(GENERIC_ERROR);
+      setFormError(f.server.generic);
       resetTurnstile();
     } finally {
       setSubmitting(false);
@@ -140,7 +139,7 @@ export default function ReservationForm() {
   const errorText = (field: keyof FieldErrors) =>
     errors[field] ? (
       <p id={`${field}-error`} className="mt-1 text-sm font-semibold text-red-800">
-        {errors[field]}
+        {(f.errors as Record<string, string>)[errors[field]!] ?? f.errors.invalid_form}
       </p>
     ) : null;
 
@@ -155,7 +154,7 @@ export default function ReservationForm() {
       <div className="grid gap-6 sm:grid-cols-2">
         <div>
           <label htmlFor="name" className="font-semibold">
-            姓名
+            {f.labels.name}
           </label>
           <input
             id="name"
@@ -172,7 +171,7 @@ export default function ReservationForm() {
         </div>
         <div>
           <label htmlFor="email" className="font-semibold">
-            Email
+            {f.labels.email}
           </label>
           <input
             id="email"
@@ -190,7 +189,7 @@ export default function ReservationForm() {
         </div>
         <div>
           <label htmlFor="phone" className="font-semibold">
-            電話(選填)
+            {f.labels.phone}
           </label>
           <input
             id="phone"
@@ -208,7 +207,7 @@ export default function ReservationForm() {
         </div>
         <div>
           <label htmlFor="partySize" className="font-semibold">
-            人數
+            {f.labels.partySize}
           </label>
           <select
             id="partySize"
@@ -221,7 +220,7 @@ export default function ReservationForm() {
           >
             {Array.from({ length: 8 }, (_, i) => i + 1).map((n) => (
               <option key={n} value={n}>
-                {n} 位
+                {n === 1 ? f.partyOne : interpolate(f.partyMany, { n })}
               </option>
             ))}
           </select>
@@ -229,7 +228,7 @@ export default function ReservationForm() {
         </div>
         <div>
           <label htmlFor="date" className="font-semibold">
-            日期
+            {f.labels.date}
           </label>
           <input
             id="date"
@@ -253,13 +252,11 @@ export default function ReservationForm() {
         aria-describedby={describedBy("slotId")}
         className="rounded-lg focus:outline-none"
       >
-        <legend className="font-semibold">時段</legend>
-        {slotsState.status === "idle" && <p className="mt-2 text-ink/80">請先選擇日期</p>}
-        {slotsState.status === "loading" && <p className="mt-2 text-ink/80">載入時段中…</p>}
-        {slotsState.status === "error" && <p className="mt-2">無法載入時段,請稍後再試。</p>}
-        {slotsState.status === "ready" && slotsState.slots.length === 0 && (
-          <p className="mt-2">這天沒有可預約的時段,請改選其他日期。</p>
-        )}
+        <legend className="font-semibold">{f.labels.slots}</legend>
+        {slotsState.status === "idle" && <p className="mt-2 text-ink/80">{f.pickDateFirst}</p>}
+        {slotsState.status === "loading" && <p className="mt-2 text-ink/80">{f.loadingSlots}</p>}
+        {slotsState.status === "error" && <p className="mt-2">{f.slotsError}</p>}
+        {slotsState.status === "ready" && slotsState.slots.length === 0 && <p className="mt-2">{f.noSlots}</p>}
         {slotsState.status === "ready" && slotsState.slots.length > 0 && (
           <div className="mt-2 grid gap-2 sm:grid-cols-3">
             {slotsState.slots.map((slot) => {
@@ -285,7 +282,7 @@ export default function ReservationForm() {
                     onChange={(e) => update("slotId", e.target.value)}
                     className="h-5 w-5 accent-espresso"
                   />
-                  {slotLabel(slot, partySize)}
+                  {slotLabel(f, slot, partySize)}
                 </label>
               );
             })}
@@ -296,7 +293,7 @@ export default function ReservationForm() {
 
       <div>
         <label htmlFor="note" className="font-semibold">
-          備註(選填)
+          {f.labels.note}
         </label>
         <textarea
           id="note"
@@ -313,10 +310,15 @@ export default function ReservationForm() {
       </div>
 
       <div>
-        <Turnstile key={turnstileKey} onToken={(t) => {
-          setToken(t);
-          if (t) setErrors((e) => ({ ...e, turnstileToken: undefined }));
-        }} />
+        <Turnstile
+          key={turnstileKey}
+          language={locale}
+          missingKeyText={f.turnstileMissing}
+          onToken={(t) => {
+            setToken(t);
+            if (t) setErrors((e) => ({ ...e, turnstileToken: undefined }));
+          }}
+        />
         {errorText("turnstileToken")}
       </div>
 
@@ -326,7 +328,7 @@ export default function ReservationForm() {
         aria-busy={submitting || undefined}
         className="inline-flex min-h-11 items-center rounded-full bg-espresso px-8 font-semibold text-cream hover:bg-espresso/90 disabled:opacity-60"
       >
-        {submitting ? "送出中…" : "送出訂位"}
+        {submitting ? f.submitting : f.submit}
       </button>
     </form>
   );

@@ -8,8 +8,9 @@
   --color-foam: #fffaf3;
   --color-caramel: #c68b59;
   --color-ink: #1f1f1f;
-  --font-sans: var(--font-inter), var(--font-noto-tc), system-ui, sans-serif;
-  --font-display: var(--font-playfair), var(--font-noto-tc), serif;
+  /* --font-noto-tc 只在繁中 layout 定義;var() 未定義會讓整條 font-family 失效,所以每個變數都給備援值 */
+  --font-sans: var(--font-inter, system-ui), var(--font-noto-tc, system-ui), sans-serif;
+  --font-display: var(--font-playfair, serif), var(--font-noto-tc, serif), serif;
 }
 
 html {

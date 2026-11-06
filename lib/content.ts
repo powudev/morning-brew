@@ -1,6 +1,6 @@
-import site from "@/content/site.json";
 import menu from "@/content/menu.json";
 import reviews from "@/content/reviews.json";
+import site from "@/content/site.json";
 
 // 公開頁內容一律讀 content/*.json(build 時打包),不讀資料庫
 export type Site = typeof site;
@@ -12,9 +12,7 @@ export const siteContent: Site = site;
 export const menuContent: Menu = menu;
 export const reviewsContent: Reviews = reviews;
 
-export const siteUrl = (
-  process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"
-).replace(/\/$/, "");
+export const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "");
 
 export function featuredItems(): MenuItem[] {
   return menu.items.filter((item) => item.featured);

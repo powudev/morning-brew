@@ -7,6 +7,8 @@ const nextConfig: NextConfig = {
   trailingSlash: true,
   // 靜態輸出不支援預設 image loader;圖片預先轉 WebP/AVIF
   images: { unoptimized: true },
+  // 兩個語系各有根 layout,未匹配路由的 404 由 app/global-not-found.tsx 處理
+  experimental: { globalNotFound: true },
   turbopack: {
     rules: {
       "*.css": {

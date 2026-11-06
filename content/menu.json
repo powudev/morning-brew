@@ -1,34 +1,337 @@
 {
   "categories": [
-    { "id": "espresso", "name": "義式咖啡", "nameEn": "Espresso" },
-    { "id": "pour-over", "name": "手沖咖啡", "nameEn": "Pour Over" },
-    { "id": "non-coffee", "name": "非咖啡飲品", "nameEn": "Non-Coffee" },
-    { "id": "pastry", "name": "甜點", "nameEn": "Pastry" }
+    {
+      "id": "espresso",
+      "name": {
+        "en": "Espresso",
+        "zh-tw": "義式咖啡"
+      }
+    },
+    {
+      "id": "pour-over",
+      "name": {
+        "en": "Pour Over",
+        "zh-tw": "手沖咖啡"
+      }
+    },
+    {
+      "id": "non-coffee",
+      "name": {
+        "en": "Non-Coffee",
+        "zh-tw": "非咖啡飲品"
+      }
+    },
+    {
+      "id": "pastry",
+      "name": {
+        "en": "Pastry",
+        "zh-tw": "甜點"
+      }
+    }
   ],
   "items": [
-    { "id": "espresso", "category": "espresso", "name": "濃縮咖啡", "nameEn": "Espresso", "price": 80, "tags": [], "description": "雙份濃縮,帶堅果與黑巧克力尾韻。", "featured": false },
-    { "id": "americano", "category": "espresso", "name": "美式咖啡", "nameEn": "Americano", "price": 100, "tags": [], "description": "濃縮加熱水,乾淨順口。", "featured": false },
-    { "id": "latte", "category": "espresso", "name": "拿鐵", "nameEn": "Caffè Latte", "price": 140, "tags": [], "description": "細緻奶泡與濃縮的經典組合,可換燕麥奶。", "featured": true },
-    { "id": "cappuccino", "category": "espresso", "name": "卡布奇諾", "nameEn": "Cappuccino", "price": 140, "tags": [], "description": "厚實奶泡,咖啡風味更明顯。", "featured": false },
-    { "id": "flat-white", "category": "espresso", "name": "馥列白", "nameEn": "Flat White", "price": 150, "tags": [], "description": "較少奶量、較濃郁的咖啡口感。", "featured": false },
-    { "id": "caramel-latte", "category": "espresso", "name": "焦糖拿鐵", "nameEn": "Caramel Latte", "price": 160, "tags": [], "description": "自製焦糖醬,甜度可調整。", "featured": true },
-    { "id": "ethiopia", "category": "pour-over", "name": "衣索比亞 耶加雪菲", "nameEn": "Ethiopia Yirgacheffe", "price": 180, "tags": [], "description": "淺焙,柑橘與花香,酸質明亮。", "featured": true },
-    { "id": "colombia", "category": "pour-over", "name": "哥倫比亞 慧蘭", "nameEn": "Colombia Huila", "price": 170, "tags": [], "description": "中焙,焦糖與紅蘋果甜感。", "featured": false },
-    { "id": "decaf-pour-over", "category": "pour-over", "name": "低咖啡因手沖", "nameEn": "Decaf Pour Over", "price": 170, "tags": ["decaf"], "description": "瑞士水洗低因豆,晚上也能喝。", "featured": false },
-    { "id": "cold-brew", "category": "pour-over", "name": "冷萃咖啡", "nameEn": "Cold Brew", "price": 150, "tags": [], "description": "低溫萃取 16 小時,口感圓潤。", "featured": false },
-    { "id": "matcha-latte", "category": "non-coffee", "name": "抹茶拿鐵", "nameEn": "Matcha Latte", "price": 150, "tags": ["decaf"], "description": "宇治抹茶,微苦回甘。", "featured": false },
-    { "id": "hot-chocolate", "category": "non-coffee", "name": "熱可可", "nameEn": "Hot Chocolate", "price": 130, "tags": ["decaf", "vegetarian"], "description": "70% 黑巧克力,濃郁不膩。", "featured": false },
-    { "id": "earl-grey", "category": "non-coffee", "name": "伯爵紅茶", "nameEn": "Earl Grey Tea", "price": 120, "tags": ["vegan"], "description": "佛手柑香氣,可加牛奶。", "featured": false },
-    { "id": "lemonade", "category": "non-coffee", "name": "氣泡檸檬飲", "nameEn": "Sparkling Lemonade", "price": 120, "tags": ["decaf", "vegan"], "description": "新鮮檸檬與氣泡水,清爽解渴。", "featured": false },
-    { "id": "croissant", "category": "pastry", "name": "奶油可頌", "nameEn": "Butter Croissant", "price": 85, "tags": ["vegetarian"], "description": "每日現烤,外酥內軟。", "featured": true },
-    { "id": "basque-cheesecake", "category": "pastry", "name": "巴斯克乳酪蛋糕", "nameEn": "Basque Cheesecake", "price": 160, "tags": ["vegetarian"], "description": "焦香表面,濃郁綿密。", "featured": false },
-    { "id": "scone", "category": "pastry", "name": "原味司康", "nameEn": "Plain Scone", "price": 90, "tags": ["vegetarian"], "description": "附果醬與奶油。", "featured": false },
-    { "id": "banana-bread", "category": "pastry", "name": "純素香蕉蛋糕", "nameEn": "Vegan Banana Bread", "price": 110, "tags": ["vegan"], "description": "無蛋奶,使用燕麥奶與椰子油。", "featured": false }
+    {
+      "id": "espresso",
+      "category": "espresso",
+      "name": {
+        "en": "Espresso",
+        "zh-tw": "濃縮咖啡"
+      },
+      "price": 80,
+      "tags": [],
+      "description": {
+        "en": "A double shot with notes of nuts and dark chocolate.",
+        "zh-tw": "雙份濃縮,帶堅果與黑巧克力尾韻。"
+      },
+      "featured": false
+    },
+    {
+      "id": "americano",
+      "category": "espresso",
+      "name": {
+        "en": "Americano",
+        "zh-tw": "美式咖啡"
+      },
+      "price": 100,
+      "tags": [],
+      "description": {
+        "en": "Espresso topped with hot water. Clean and smooth.",
+        "zh-tw": "濃縮加熱水,乾淨順口。"
+      },
+      "featured": false
+    },
+    {
+      "id": "latte",
+      "category": "espresso",
+      "name": {
+        "en": "Caffè Latte",
+        "zh-tw": "拿鐵"
+      },
+      "price": 140,
+      "tags": [],
+      "description": {
+        "en": "Espresso with silky steamed milk. Oat milk available.",
+        "zh-tw": "細緻奶泡與濃縮的經典組合,可換燕麥奶。"
+      },
+      "featured": true
+    },
+    {
+      "id": "cappuccino",
+      "category": "espresso",
+      "name": {
+        "en": "Cappuccino",
+        "zh-tw": "卡布奇諾"
+      },
+      "price": 140,
+      "tags": [],
+      "description": {
+        "en": "A thick layer of foam with a stronger coffee taste.",
+        "zh-tw": "厚實奶泡,咖啡風味更明顯。"
+      },
+      "featured": false
+    },
+    {
+      "id": "flat-white",
+      "category": "espresso",
+      "name": {
+        "en": "Flat White",
+        "zh-tw": "馥列白"
+      },
+      "price": 150,
+      "tags": [],
+      "description": {
+        "en": "Less milk for a richer, more intense coffee.",
+        "zh-tw": "較少奶量、較濃郁的咖啡口感。"
+      },
+      "featured": false
+    },
+    {
+      "id": "caramel-latte",
+      "category": "espresso",
+      "name": {
+        "en": "Caramel Latte",
+        "zh-tw": "焦糖拿鐵"
+      },
+      "price": 160,
+      "tags": [],
+      "description": {
+        "en": "House-made caramel sauce, sweetness adjustable.",
+        "zh-tw": "自製焦糖醬,甜度可調整。"
+      },
+      "featured": true
+    },
+    {
+      "id": "ethiopia",
+      "category": "pour-over",
+      "name": {
+        "en": "Ethiopia Yirgacheffe",
+        "zh-tw": "衣索比亞 耶加雪菲"
+      },
+      "price": 180,
+      "tags": [],
+      "description": {
+        "en": "Light roast with citrus and floral notes, bright acidity.",
+        "zh-tw": "淺焙,柑橘與花香,酸質明亮。"
+      },
+      "featured": true
+    },
+    {
+      "id": "colombia",
+      "category": "pour-over",
+      "name": {
+        "en": "Colombia Huila",
+        "zh-tw": "哥倫比亞 慧蘭"
+      },
+      "price": 170,
+      "tags": [],
+      "description": {
+        "en": "Medium roast with caramel and red apple sweetness.",
+        "zh-tw": "中焙,焦糖與紅蘋果甜感。"
+      },
+      "featured": false
+    },
+    {
+      "id": "decaf-pour-over",
+      "category": "pour-over",
+      "name": {
+        "en": "Decaf Pour Over",
+        "zh-tw": "低咖啡因手沖"
+      },
+      "price": 170,
+      "tags": [
+        "decaf"
+      ],
+      "description": {
+        "en": "Swiss Water Process decaf, perfect for the evening.",
+        "zh-tw": "瑞士水洗低因豆,晚上也能喝。"
+      },
+      "featured": false
+    },
+    {
+      "id": "cold-brew",
+      "category": "pour-over",
+      "name": {
+        "en": "Cold Brew",
+        "zh-tw": "冷萃咖啡"
+      },
+      "price": 150,
+      "tags": [],
+      "description": {
+        "en": "Steeped cold for 16 hours for a round, mellow cup.",
+        "zh-tw": "低溫萃取 16 小時,口感圓潤。"
+      },
+      "featured": false
+    },
+    {
+      "id": "matcha-latte",
+      "category": "non-coffee",
+      "name": {
+        "en": "Matcha Latte",
+        "zh-tw": "抹茶拿鐵"
+      },
+      "price": 150,
+      "tags": [
+        "decaf"
+      ],
+      "description": {
+        "en": "Uji matcha, slightly bitter with a sweet finish.",
+        "zh-tw": "宇治抹茶,微苦回甘。"
+      },
+      "featured": false
+    },
+    {
+      "id": "hot-chocolate",
+      "category": "non-coffee",
+      "name": {
+        "en": "Hot Chocolate",
+        "zh-tw": "熱可可"
+      },
+      "price": 130,
+      "tags": [
+        "decaf",
+        "vegetarian"
+      ],
+      "description": {
+        "en": "Made with 70% dark chocolate. Rich, never cloying.",
+        "zh-tw": "70% 黑巧克力,濃郁不膩。"
+      },
+      "featured": false
+    },
+    {
+      "id": "earl-grey",
+      "category": "non-coffee",
+      "name": {
+        "en": "Earl Grey Tea",
+        "zh-tw": "伯爵紅茶"
+      },
+      "price": 120,
+      "tags": [
+        "vegan"
+      ],
+      "description": {
+        "en": "Fragrant bergamot. Milk on request.",
+        "zh-tw": "佛手柑香氣,可加牛奶。"
+      },
+      "featured": false
+    },
+    {
+      "id": "lemonade",
+      "category": "non-coffee",
+      "name": {
+        "en": "Sparkling Lemonade",
+        "zh-tw": "氣泡檸檬飲"
+      },
+      "price": 120,
+      "tags": [
+        "decaf",
+        "vegan"
+      ],
+      "description": {
+        "en": "Fresh lemon and sparkling water. Light and refreshing.",
+        "zh-tw": "新鮮檸檬與氣泡水,清爽解渴。"
+      },
+      "featured": false
+    },
+    {
+      "id": "croissant",
+      "category": "pastry",
+      "name": {
+        "en": "Butter Croissant",
+        "zh-tw": "奶油可頌"
+      },
+      "price": 85,
+      "tags": [
+        "vegetarian"
+      ],
+      "description": {
+        "en": "Baked fresh every morning: crisp outside, soft inside.",
+        "zh-tw": "每日現烤,外酥內軟。"
+      },
+      "featured": true
+    },
+    {
+      "id": "basque-cheesecake",
+      "category": "pastry",
+      "name": {
+        "en": "Basque Cheesecake",
+        "zh-tw": "巴斯克乳酪蛋糕"
+      },
+      "price": 160,
+      "tags": [
+        "vegetarian"
+      ],
+      "description": {
+        "en": "Caramelized top with a rich, creamy center.",
+        "zh-tw": "焦香表面,濃郁綿密。"
+      },
+      "featured": false
+    },
+    {
+      "id": "scone",
+      "category": "pastry",
+      "name": {
+        "en": "Plain Scone",
+        "zh-tw": "原味司康"
+      },
+      "price": 90,
+      "tags": [
+        "vegetarian"
+      ],
+      "description": {
+        "en": "Served with jam and butter.",
+        "zh-tw": "附果醬與奶油。"
+      },
+      "featured": false
+    },
+    {
+      "id": "banana-bread",
+      "category": "pastry",
+      "name": {
+        "en": "Vegan Banana Bread",
+        "zh-tw": "純素香蕉蛋糕"
+      },
+      "price": 110,
+      "tags": [
+        "vegan"
+      ],
+      "description": {
+        "en": "No eggs or dairy, made with oat milk and coconut oil.",
+        "zh-tw": "無蛋奶,使用燕麥奶與椰子油。"
+      },
+      "featured": false
+    }
   ],
   "tagLabels": {
-    "vegetarian": "素食",
-    "vegan": "全素",
-    "decaf": "無/低咖啡因"
+    "en": {
+      "vegetarian": "Vegetarian",
+      "vegan": "Vegan",
+      "decaf": "Decaf / low caffeine"
+    },
+    "zh-tw": {
+      "vegetarian": "素食",
+      "vegan": "全素",
+      "decaf": "無/低咖啡因"
+    }
   },
   "currency": "TWD"
 }

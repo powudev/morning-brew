@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { siteContent } from "@/lib/content";
+import { getDictionary } from "@/lib/dictionary";
+import type { Locale } from "@/lib/i18n";
 
 const { lat, lng, embedTitle, note } = siteContent.map;
 const d = 0.004; // 地圖範圍(經緯度)
@@ -15,8 +17,9 @@ const embedSrc =
 const externalHref = `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=17/${lat}/${lng}`;
 
 // 第三方 iframe 點擊後才載入:首屏不被拖慢,也不在使用者同意前連線到外部
-export default function MapEmbed() {
+export default function MapEmbed({ locale }: { locale: Locale }) {
   const [loaded, setLoaded] = useState(false);
+  const t = getDictionary(locale).map;
 
   return (
     <div>
@@ -24,33 +27,34 @@ export default function MapEmbed() {
         {loaded ? (
           <iframe
             src={embedSrc}
-            title={embedTitle}
+            title={embedTitle[locale]}
             loading="lazy"
             referrerPolicy="no-referrer"
             className="absolute inset-0 h-full w-full"
           />
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center">
-            <p className="text-sm text-ink/80">地圖由 OpenStreetMap 提供,點擊後才會載入。</p>
+            <p className="text-sm text-ink/80">{t.loadNote}</p>
             <button
               type="button"
               onClick={() => setLoaded(true)}
               className="min-h-11 rounded-full bg-espresso px-5 font-semibold text-cream hover:bg-espresso/90"
             >
-              載入地圖
+              {t.load}
             </button>
           </div>
         )}
       </div>
       <p className="mt-2 flex flex-wrap items-center justify-between gap-2 text-sm text-ink/80">
-        <span>{note}</span>
+        <span>{note[locale]}</span>
         <a
           href={externalHref}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex min-h-11 items-center underline underline-offset-4"
         >
-          在 OpenStreetMap 開啟<span className="sr-only">(另開新視窗)</span>
+          {t.openExternal}
+          <span className="sr-only">{t.newWindow}</span>
         </a>
       </p>
     </div>

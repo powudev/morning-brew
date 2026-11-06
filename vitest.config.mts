@@ -12,5 +12,7 @@ export default defineConfig({
     exclude: ["node_modules/**", "tests/e2e/**", "supabase/**", ".next/**", "out/**"],
     // 預設 node;元件測試檔頂端加 `// @vitest-environment jsdom`
     setupFiles: ["./vitest.setup.ts"],
+    // 與 next.config.ts 的 trailingSlash: true 一致(next/link 在測試環境讀這個變數)
+    env: { __NEXT_TRAILING_SLASH: "true" },
   },
 });
