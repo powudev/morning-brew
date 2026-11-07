@@ -1,0 +1,28 @@
+# 靜態安全掃描(SAST)。有發現即失敗;誤判以 `// nosemgrep: <rule-id>` 並寫明原因處理。
+name: Semgrep
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "0 3 * * 1" # 每週一 03:00 UTC,規則庫更新後重掃
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  semgrep:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Semgrep scan
+        run: >-
+          pipx run semgrep==1.183.0 scan
+          --config p/default --config p/typescript --config p/react --config p/nextjs
+          --config p/secrets --config p/github-actions
+          --metrics=off --error

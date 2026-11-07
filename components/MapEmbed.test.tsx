@@ -28,6 +28,7 @@ describe.each(locales)("MapEmbed(%s)", (locale) => {
 
   it("不載入也提供外部地圖連結", () => {
     render(<MapEmbed locale={locale} />);
+    // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp -- 測試內固定字串,非使用者輸入
     const link = screen.getByRole("link", { name: new RegExp(d.openExternal) });
     expect(link.getAttribute("href")).toMatch(/^https:\/\/www\.openstreetmap\.org\//);
     expect(link).toHaveAttribute("rel", expect.stringContaining("noopener"));

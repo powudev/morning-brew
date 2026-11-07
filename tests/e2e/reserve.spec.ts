@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./support/fixtures";
 import { TURNSTILE_FAIL_PORT } from "../../playwright.config";
 import { localSupabase } from "./support/local-supabase";
 import {

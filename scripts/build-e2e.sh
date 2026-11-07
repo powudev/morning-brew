@@ -15,4 +15,4 @@ esac
 NEXT_PUBLIC_SUPABASE_URL="$api_url" \
 NEXT_PUBLIC_SUPABASE_ANON_KEY="$anon_key" \
 NEXT_PUBLIC_TURNSTILE_SITE_KEY="1x00000000000000000000AA" \
-  pnpm exec next build
+  pnpm run build

@@ -53,6 +53,7 @@ function setup(locale: Locale) {
   const d = getDictionary(locale);
   const f = d.form;
   const label = f.labels;
+  // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp -- 測試內固定字串,非使用者輸入
   const slotName = (time: string) => new RegExp(`^${time}`);
 
   async function pickDate() {

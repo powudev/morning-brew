@@ -45,6 +45,7 @@ function signedInStaff(list = sample) {
   api.isStaff.mockResolvedValue(true);
   api.listReservations.mockResolvedValue(list);
 }
+// nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp -- 測試內固定字串,非使用者輸入
 const row = (name: string) => screen.getByRole("listitem", { name: new RegExp(name) });
 
 beforeEach(() => {

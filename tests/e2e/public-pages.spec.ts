@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./support/fixtures";
 import menu from "../../content/menu.json";
 import reviews from "../../content/reviews.json";
 import site from "../../content/site.json";

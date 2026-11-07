@@ -1,5 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./support/fixtures";
 import { adminDate, adminSlots, CUSTOMER_EMAIL, E2E_EMAIL_DOMAIN, sql, STAFF_EMAIL } from "./support/db";
 
 const password = () => process.env.E2E_USER_PASSWORD ?? "";

@@ -1,0 +1,120 @@
+# CI:lint → typecheck → 單元 → DB(pgTAP)+ 整合 → build → E2E;main 全綠後才部署。
+# 任一步失敗即停止,不會部署。所有 action 固定 commit SHA(Dependabot 負責更新)。
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+env:
+  SUPABASE_CLI_VERSION: 3.0.0
+  # CI 只需要 DB、Auth、PostgREST 與 API gateway
+  SUPABASE_EXCLUDE: studio,imgproxy,realtime,storage-api,edge-runtime,logflare,vector,supavisor,mailpit,postgres-meta
+
+jobs:
+  test:
+    name: Lint, test (unit / DB / integration / E2E), build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+      - name: Typecheck
+        run: pnpm typecheck
+      - name: Unit tests (Vitest)
+        run: pnpm test
+
+      - uses: supabase/setup-cli@689adcfb80d947100a1eab127289b97d1fb07b13 # v3.2.0
+        with:
+          version: ${{ env.SUPABASE_CLI_VERSION }}
+      - name: Start local Supabase (migrations + seed)
+        run: supabase start -x "$SUPABASE_EXCLUDE"
+      - name: Database tests (pgTAP:schema / RLS / functions)
+        run: supabase test db
+      - name: Integration tests (real Auth + PostgREST + RLS)
+        run: pnpm test:integration
+
+      - name: Build (local Supabase + Turnstile test keys)
+        run: pnpm build:e2e
+      - name: Install Playwright browser
+        run: pnpm exec playwright install --with-deps chromium
+      - name: E2E tests (Playwright on wrangler pages dev)
+        run: pnpm exec playwright test
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+
+  deploy:
+    name: Deploy to Cloudflare Pages
+    needs: test
+    # 雲端環境設定完成前不部署:Po Wei 在 repo Variables 設 DEPLOY_ENABLED=true 才啟用
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: production
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Check deploy configuration
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.NEXT_PUBLIC_TURNSTILE_SITE_KEY }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          missing=0
+          for name in NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY NEXT_PUBLIC_TURNSTILE_SITE_KEY CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID; do
+            if [ -z "${!name}" ]; then echo "::error::缺少 $name"; missing=1; fi
+          done
+          case "$NEXT_PUBLIC_SUPABASE_URL" in https://*.supabase.co) ;; *) echo "::error::NEXT_PUBLIC_SUPABASE_URL 必須是 https://<ref>.supabase.co"; missing=1 ;; esac
+          exit $missing
+
+      - name: Build (production)
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.NEXT_PUBLIC_TURNSTILE_SITE_KEY }}
+        run: pnpm build
+
+      - name: Deploy (static out/ + functions/)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: pnpm exec wrangler pages deploy out --project-name=morning-brew --branch=main --commit-hash="$GITHUB_SHA"

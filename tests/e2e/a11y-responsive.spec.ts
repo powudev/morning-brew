@@ -1,5 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./support/fixtures";
 import { getDictionary, localePath, locales } from "./support/i18n";
 
 const paths = ["/", "/menu/", "/about/", "/reserve/", "/reserve/done/", "/privacy/"];

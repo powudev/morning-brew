@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./support/fixtures";
 import menu from "../../content/menu.json";
 import site from "../../content/site.json";
 import { eachLocale, getDictionary, localePath } from "./support/i18n";

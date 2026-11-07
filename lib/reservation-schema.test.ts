@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { errorCodes, fieldErrors, reservationSchema } from "@/lib/reservation-schema";
 
 const valid = {
@@ -94,5 +94,21 @@ describe("fieldErrors", () => {
     if (!result.success) {
       for (const code of Object.values(fieldErrors(result.error))) expect(errorCodes).toContain(code);
     }
+  });
+});
+
+describe("zod 設定", () => {
+  it("jitless:驗證時不使用 eval / new Function(CSP 不允許 unsafe-eval,Workers 也禁止)", async () => {
+    const { globalConfig } = await import("zod/v4/core");
+    expect(globalConfig.jitless).toBe(true);
+    const original = globalThis.Function;
+    const spy = vi.fn();
+    globalThis.Function = new Proxy(original, { construct: (...args) => (spy(), Reflect.construct(...args)) });
+    try {
+      expect(reservationSchema.safeParse(valid).success).toBe(true);
+    } finally {
+      globalThis.Function = original;
+    }
+    expect(spy).not.toHaveBeenCalled();
   });
 });

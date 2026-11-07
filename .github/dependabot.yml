@@ -1,0 +1,31 @@
+# 依賴更新:每週一次,新版本至少發布 7 天後才提(與 pnpm minimumReleaseAge 的供應鏈保護一致)
+version: 2
+updates:
+  - package-ecosystem: npm # pnpm 也用 npm ecosystem
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      timezone: Asia/Taipei
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 5
+    groups:
+      dev-dependencies:
+        dependency-type: development
+        update-types: [minor, patch]
+      production-dependencies:
+        dependency-type: production
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      timezone: Asia/Taipei
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        patterns: ["*"]
