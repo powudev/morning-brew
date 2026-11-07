@@ -12,7 +12,8 @@
     "test:e2e": "pnpm build:e2e && playwright test",
     "typecheck": "tsc --noEmit",
     "build:e2e": "scripts/build-e2e.sh",
-    "test:integration": "vitest run --config vitest.integration.config.mts"
+    "test:integration": "vitest run --config vitest.integration.config.mts",
+    "screenshots": "pnpm build:e2e && playwright test -c playwright.screenshots.config.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.0",
