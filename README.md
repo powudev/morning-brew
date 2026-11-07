@@ -14,6 +14,20 @@ automatically.
 - **Live demo:** _coming soon_
 - **Video walkthrough (Loom):** _coming soon_
 
+> _Status (Nov 2026): the live site is not deployed yet. The badges above appear once the repository
+> is public, and the Lighthouse scores below were measured on a local production build._
+
+## Why this matters if your app was built with AI
+
+Lovable, Bolt and similar tools usually generate the same kind of stack: a frontend plus Supabase.
+They get you a working demo fast, but they often skip the parts you can't see:
+- database rules (Row Level Security, RLS) that are missing or too open,
+- secret keys that end up in the browser,
+- no tests, so every change can break something.
+
+This project shows what those parts look like when they're done properly. I can review or fix the
+same things in your app.
+
 | Home (desktop) | Reservation form (mobile) | Staff dashboard |
 |---|---|---|
 | ![Home page](docs/screenshots/desktop-home.png) | ![Reservation form on mobile](docs/screenshots/mobile-reserve.png) | ![Staff dashboard](docs/screenshots/desktop-admin-dashboard.png) |
@@ -25,8 +39,8 @@ More screenshots are in [`docs/screenshots/`](docs/screenshots/).
 **For guests**
 - Home, menu, about, privacy and reservation pages, in English (default) and Traditional Chinese (`/zh-tw/`)
 - Online booking: pick a date, see the remaining seats for each time slot, and book
-- Bot protection with Cloudflare Turnstile (no puzzles for real people)
-- Works well on phones; keyboard and screen-reader friendly (WCAG 2.1 AA checked on every page)
+- Bot protection with Cloudflare Turnstile (usually invisible to real people)
+- Works well on phones and with keyboards and screen readers. Every page passes automated accessibility checks (axe-core, WCAG 2.1 AA rules)
 - SEO: per-page metadata, `hreflang` for both languages, sitemap, robots.txt, and structured data (JSON-LD)
 
 **For staff**
@@ -39,7 +53,7 @@ More screenshots are in [`docs/screenshots/`](docs/screenshots/).
 | Area | Choice |
 |---|---|
 | Frontend | Next.js 16 (App Router, static export), React 19, TypeScript, Tailwind CSS 4 |
-| Backend | Cloudflare Pages Functions (reservation API), Supabase (Postgres, Auth, Row Level Security) |
+| Backend | Cloudflare Pages Functions (reservation API), Supabase (Postgres, Auth, RLS) |
 | Validation | zod (shared by the form and the API) |
 | Testing | Vitest + Testing Library, pgTAP, Playwright + axe-core |
 | CI/CD | GitHub Actions → Cloudflare Pages; Dependabot; Semgrep |
@@ -82,72 +96,76 @@ sequenceDiagram
 
 ## Security design
 
-This section is written for business owners, not just engineers. In short: **the website assumes
-that anyone on the internet can try to misuse it, and every layer says "no" by default.**
+This section is written for business owners, not just engineers. The website assumes that anyone on
+the internet may try to misuse it, so every layer says "no" by default. In short:
+
+- **Visitors can't touch the database.** The public site has no access to any data.
+- **Bookings have one controlled door**, and the same seat can't be booked twice.
+- **Staff access is enforced by the database itself**, and the master key stays on the server.
 
 **1. Visitors can't read or change data directly.**
-The public site has no permission to read any database table, not even its own reservations list.
-Page content (menu, hours, reviews) comes from files built into the site, not from the database.
-So even if someone copies the site's public key, there is nothing they can read with it.
+The public site has no permission to read any database table. Page content (menu, hours, reviews)
+is built into the site, so even someone who copies the site's public key can read nothing with it.
 
 **2. Bookings go through one controlled door.**
-Every booking is sent to a small server function that:
-- checks the request is a reasonable size and format,
-- confirms the visitor passed Cloudflare Turnstile (blocks bots and spam),
-- validates every field (name, email, party size, date, time slot),
-- then calls a single database function that does the booking.
-
-If an outside service is down, the function **fails closed**: it refuses the booking instead of
-letting unchecked requests through. Error messages never reveal internal details.
+A small server function checks for bots (Cloudflare Turnstile) and validates every field before
+the booking reaches the database. If an outside service is down, it refuses the booking instead of
+letting unchecked requests through.
 
 **3. No double-booking, even under heavy traffic.**
-When a slot is nearly full and many people book at once, the database locks that time slot while it
-counts seats. A test fires 10 bookings at the same time at a slot with 4 seats: exactly 4 succeed.
-When the lock is removed on purpose, the same test catches the overbooking every time. That shows
-the test really protects against this problem.
+The database locks a time slot while it counts seats. In a test, 10 people book a slot with 4 seats
+at the same moment: exactly 4 succeed.
 
 **4. Staff see only what staff should see.**
-Staff sign in with their own accounts, and public sign-up is turned off. Access is enforced by the
-database itself (Row Level Security): only accounts listed as staff can view or update
-reservations, and they can only change the *status* field. Someone who signs in without staff access
-is signed out immediately and sees nothing. This is tested against a real local database with three
-kinds of users: anonymous, signed-in non-staff, and staff.
+Staff sign in with their own accounts, and public sign-up is turned off. The database rules (RLS)
+in the database allows only staff accounts to view reservations, and they can change only the
+booking status. Anyone else who signs in is signed out immediately and sees nothing.
 
 **5. The powerful key stays on the server.**
-The database "master" key exists only in Cloudflare's encrypted environment settings. It is never in
-the browser, the code repository, or the build output. The repository only contains
-[`.env.example`](.env.example) with variable *names*.
-
-**6. The browser is told what is allowed.**
-Every page is served with security headers:
-- a strict **Content Security Policy**: pages may only run this site's own scripts (each inline
-  script is allowed by its exact fingerprint) plus Cloudflare Turnstile. Injected scripts are blocked.
-- the site can't be embedded in other sites (protects against clickjacking),
-- HTTPS is enforced (HSTS), and camera, microphone, location and payment features are switched off,
-- the staff area is never cached and never indexed by search engines.
-
-The automated browser tests fail if any page triggers a security-policy violation, so a future
-change can't quietly weaken it.
-
-**7. Continuous checks.**
-Every push runs Semgrep (static security scan) and the full test suite. Dependabot proposes
-dependency updates weekly, and only for versions that have been public for at least 7 days. All
-GitHub Actions are pinned to exact commit hashes.
+The database master key lives only in Cloudflare's encrypted settings. It is never in the browser,
+the code repository, or the build output.
 
 **Privacy.** The site collects only what a booking needs (name, email, optional phone and note).
-The map is loaded from OpenStreetMap only after the visitor clicks, so no third party sees the visit
-before that. There are no analytics or tracking scripts.
+The map loads from OpenStreetMap only after the visitor clicks. The site itself adds no analytics
+or tracking scripts.
+
+<details>
+<summary><strong>Technical details for engineers</strong></summary>
+
+- **Request handling** (`server/reserve.ts`): content-type and body-size checks → zod validation →
+  server-side Turnstile verification → `create_reservation()`. External failures return 503
+  (fail closed); unexpected errors return 500 without internal details.
+- **Overbooking**: `create_reservation()` takes `select … for update` on the slot row and checks
+  capacity in the same transaction. The concurrency test (10 parallel bookings, capacity 4) was
+  verified the other way too: with the lock removed, it catches the overbooking every time.
+- **Privileges**: `anon` has no table privileges; `authenticated` has `select` and column-level
+  `update (status)`; RLS policies use a `security definer` staff check. Tested with pgTAP and
+  against real Auth + PostgREST as anonymous, non-staff and staff users.
+- **Content Security Policy**: Next.js static export can't use nonces, so a post-build step hashes
+  every inline script and writes a per-page CSP: `script-src 'self'` + those hashes + Turnstile,
+  no `unsafe-inline` / `unsafe-eval`. `public/_headers` adds `frame-ancestors 'none'`, HSTS,
+  `nosniff`, Referrer-Policy and Permissions-Policy; the staff area is `no-store` + `noindex`.
+  Every Playwright test fails on any CSP violation.
+- **Secrets**: the service-role key exists only in Cloudflare Pages environment variables; the
+  repository has only [`.env.example`](.env.example) with variable names.
+- **Supply chain**: Semgrep on every push and weekly; Dependabot weekly with a 7-day cooldown;
+  all GitHub Actions pinned to commit SHAs.
+
+</details>
 
 ## Testing
 
-Development is test-first (TDD): each feature starts with a failing test. Security rules always have
-"must be refused" tests, not just happy paths.
+Three layers: unit, integration (database rules + real API), and end-to-end. Development is
+test-first (TDD): each feature starts with a failing test. Security rules always have "must be
+refused" tests, not just happy paths.
+
+Counts as of November 2026:
 
 | Layer | Tool | What it covers | Count |
 |---|---|---|---|
 | Unit / component | Vitest, Testing Library | validation rules, i18n, SEO, CSP builder, API handlers (external services mocked), form and dashboard behaviour | 172 |
-| Database | pgTAP (`supabase test db`) | schema, table privileges, RLS policies, booking and availability functions | 49 |
-| Integration | Vitest + local Supabase | real Auth + REST API + RLS as anonymous / non-staff / staff | 10 |
+| Integration: database | pgTAP (`supabase test db`) | schema, table privileges, RLS policies, booking and availability functions | 49 |
+| Integration: API | Vitest + local Supabase | real Auth + REST API + RLS as anonymous / non-staff / staff | 10 |
 | End-to-end | Playwright + axe-core | both languages, desktop and mobile: pages, booking success and failures (field errors, full slot, Turnstile rejection), staff sign-in and status changes, accessibility, security headers and CSP | 268 |
 
 Some real problems the tests caught during development:
@@ -235,3 +253,8 @@ public/_headers security headers
 
 Illustrations are original SVGs made for this project. Fonts are self-hosted (SIL Open Font License).
 Map © OpenStreetMap contributors. Details in [`docs/credits.md`](docs/credits.md).
+
+## About
+
+Built by Po Wei Wu, a DevOps engineer. I help founders take AI-built apps to production:
+deployment, security reviews, and CI/CD. GitHub: [@powudev](https://github.com/powudev)
