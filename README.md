@@ -11,7 +11,7 @@ online and staff manage reservations from a private dashboard. It is built to sh
 can be **fast, accessible, and secure by design**, with every change tested and deployed
 automatically.
 
-- **Live demo:** _coming soon_
+- **Live demo:** [cafe.powu.dev](https://cafe.powu.dev) _(coming soon)_
 - **Video walkthrough (Loom):** _coming soon_
 
 > _Status (Nov 2026): the live site is not deployed yet. The badges above appear once the repository
@@ -145,6 +145,7 @@ or tracking scripts.
   every inline script and writes a per-page CSP: `script-src 'self'` + those hashes + Turnstile,
   no `unsafe-inline` / `unsafe-eval`. `public/_headers` adds `frame-ancestors 'none'`, HSTS,
   `nosniff`, Referrer-Policy and Permissions-Policy; the staff area is `no-store` + `noindex`.
+  The site runs on a `.dev` domain, which browsers only ever load over HTTPS (HSTS-preloaded TLD).
   Every Playwright test fails on any CSP violation.
 - **Secrets**: the service-role key exists only in Cloudflare Pages environment variables; the
   repository has only [`.env.example`](.env.example) with variable names.
