@@ -14,7 +14,6 @@ export default function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
-  // 已經以 staff 登入就直接進後台
   useEffect(() => {
     let active = true;
     (async () => {
@@ -22,7 +21,6 @@ export default function LoginForm() {
         const session = await api().getSession();
         if (active && session && (await api().isStaff())) router.replace(DASHBOARD_PATH);
       } catch {
-        // 未設定或連不上:留在登入頁,送出時再顯示錯誤
       }
     })();
     return () => {

@@ -20,7 +20,6 @@ export function telHref(phone: string): string {
   return `tel:${phone.replace(/\D/g, "")}`;
 }
 
-/** 英文地址由小到大(街, 區, 市),中文由大到小(市區街) */
 export function formatAddress(locale: Locale): string {
   const { street, district, city } = site.address;
   return locale === "en"

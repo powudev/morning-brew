@@ -1,5 +1,3 @@
-// 原創 SVG 插圖(無授權問題、檔案小);皆為裝飾用,aria-hidden
-
 export function CoffeeCupIllustration({ className = "" }: { className?: string }) {
   return (
     <svg viewBox="0 0 320 280" className={className} aria-hidden="true" focusable="false">

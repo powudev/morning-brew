@@ -30,7 +30,7 @@ for (const path of pages) {
       expect(count).toBeGreaterThan(0);
       for (let i = 0; i < count; i++) {
         const box = await targets.nth(i).boundingBox();
-        if (!box) continue; // 不可見的元素
+        if (!box) continue;
         expect(box.height, await targets.nth(i).innerText()).toBeGreaterThanOrEqual(44);
       }
     });

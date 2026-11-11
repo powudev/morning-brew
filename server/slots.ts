@@ -5,7 +5,6 @@ import { rpc, type SupabaseEnv } from "@/server/supabase";
 type AvailabilityRow = { slot_id: number; start_time: string; capacity: number; remaining: number };
 export type SlotAvailability = { slotId: number; startTime: string; remaining: number };
 
-/** GET /api/slots?date=YYYY-MM-DD:某日各時段剩餘人數(anon 不能直接查 DB,經這裡以 service role 讀取) */
 export async function handleSlots(
   request: Request,
   env: SupabaseEnv,
@@ -39,7 +38,6 @@ export async function handleSlots(
     return jsonResponse({ error: "DB_UNAVAILABLE" }, 503);
   }
 
-  // 今天已經開始的時段不能訂(與 create_reservation() 的 SLOT_IN_PAST 一致)
   const isToday = date === todayInTaipei(now);
   const nowTime = nowTimeInTaipei(now);
   const slots: SlotAvailability[] = result.data.map((row) => {

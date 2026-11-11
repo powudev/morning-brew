@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { handleSlots } from "@/server/slots";
 import { env, json, mockFetch, RPC_URL } from "@/server/test-helpers";
 
-const now = new Date("2026-11-06T02:00:00Z"); // 台北 2026-11-06 10:00
+const now = new Date("2026-11-06T02:00:00Z");
 const get = (query: string) => new Request(`https://brew.test/api/slots${query}`);
 
 describe("handleSlots", () => {

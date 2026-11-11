@@ -43,7 +43,6 @@ export default function Dashboard() {
   const [saving, setSaving] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
-  // 1. 確認是 staff,否則登出並導回登入頁(真正的權限由 RLS 把關,這裡只是導覽)
   useEffect(() => {
     let active = true;
     (async () => {
@@ -67,7 +66,6 @@ export default function Dashboard() {
     };
   }, [api, router]);
 
-  // 2. 讀取選定日期的訂位(loading 狀態由「已載入的日期 ≠ 目前日期」推導)
   useEffect(() => {
     if (!ready) return;
     let active = true;

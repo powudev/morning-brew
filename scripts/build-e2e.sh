@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-# E2E 用的 build:帶入「本機」Supabase 的公開 URL / anon key 與 Cloudflare Turnstile 測試 site key。
-# 產物只給 wrangler pages dev 測試用,不可部署。
 set -euo pipefail
 
 status_env="$(supabase status -o env)"

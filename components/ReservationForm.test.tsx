@@ -8,7 +8,6 @@ import { localePath, locales, type Locale } from "@/lib/i18n";
 
 const push = vi.hoisted(() => vi.fn());
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
-// Turnstile 以假元件取代:按下按鈕就給 token,不載入 Cloudflare script
 vi.mock("@/components/Turnstile", () => ({
   default: ({ onToken }: { onToken: (t: string | null) => void }) => (
     <button type="button" onClick={() => onToken("test-token")}>
@@ -163,7 +162,6 @@ describe.each(locales)("ReservationForm(%s)", (locale) => {
     await fillValid(user);
     await user.click(submit());
     expect(await screen.findByRole("alert")).toHaveTextContent(f.server.TURNSTILE_FAILED);
-    // token 已失效:再送一次會被前端擋下,要求重新完成驗證
     await user.click(submit());
     expect(await screen.findByText(f.errors.turnstile_required)).toBeInTheDocument();
     expect(reserveCalls()).toHaveLength(1);

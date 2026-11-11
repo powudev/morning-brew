@@ -7,7 +7,6 @@ export type ReserveEnv = SupabaseEnv & { TURNSTILE_SECRET_KEY?: string };
 
 const MAX_BODY_BYTES = 8 * 1024;
 
-// create_reservation() 以 message 代碼回報的業務錯誤
 const businessErrors: Record<string, number> = {
   SLOT_FULL: 409,
   SLOT_NOT_AVAILABLE: 422,
@@ -15,11 +14,6 @@ const businessErrors: Record<string, number> = {
   INVALID_DATE: 422,
 };
 
-/**
- * POST /api/reserve
- * 順序:設定檢查 → Content-Type / 大小 → zod 驗證 → Turnstile → create_reservation()
- * 先驗欄位再驗 Turnstile:token 只能用一次,欄位錯誤時不消耗它
- */
 export async function handleReserve(request: Request, env: ReserveEnv, fetchImpl: typeof fetch = fetch): Promise<Response> {
   const { NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, TURNSTILE_SECRET_KEY } = env;
   if (!NEXT_PUBLIC_SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !TURNSTILE_SECRET_KEY) {
@@ -50,6 +44,7 @@ export async function handleReserve(request: Request, env: ReserveEnv, fetchImpl
   const input = parsed.data;
 
   try {
+    // Fields are validated before Turnstile: a token can be verified only once.
     const human = await verifyTurnstile(
       TURNSTILE_SECRET_KEY,
       input.turnstileToken,

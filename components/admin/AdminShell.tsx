@@ -1,6 +1,5 @@
 import Link from "next/link";
 
-// 後台外框:沒有公開網站的選單與語言切換器(後台僅英文)
 export default function AdminShell({ children }: { children: React.ReactNode }) {
   return (
     <>

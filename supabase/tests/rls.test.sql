@@ -1,9 +1,7 @@
--- RLS 與權限:anon 一律拒絕、非 staff 看不到資料、staff 只能讀取與改狀態
 begin;
 create extension if not exists pgtap with schema extensions;
 select plan(29);
 
--- ---- fixture(以 postgres 身分建立)----
 insert into auth.users (id, email) values
   ('11111111-1111-1111-1111-111111111111', 'staff@test.local'),
   ('22222222-2222-2222-2222-222222222222', 'other-staff@test.local'),
@@ -19,13 +17,11 @@ insert into public.reservations (id, slot_id, reservation_date, name, email, par
   ('aaaaaaaa-0000-0000-0000-000000000001', 910001, '2099-01-01', 'Test A', 'a@test.local', 2, '2000-01-01'),
   ('aaaaaaaa-0000-0000-0000-000000000002', 910001, '2099-01-01', 'Test B', 'b@test.local', 3, '2000-01-01');
 
--- ---- 結構:三張表都啟用 RLS,is_staff 不在 public ----
 select ok((select relrowsecurity from pg_class where oid = 'public.time_slots'::regclass), 'time_slots 啟用 RLS');
 select ok((select relrowsecurity from pg_class where oid = 'public.reservations'::regclass), 'reservations 啟用 RLS');
 select ok((select relrowsecurity from pg_class where oid = 'public.staff'::regclass), 'staff 啟用 RLS');
 select hasnt_function('public', 'is_staff', 'is_staff 不在 public schema(不會被當 RPC 呼叫)');
 
--- ---- anon ----
 set local role anon;
 select throws_ok('select * from public.reservations', '42501', null, 'anon 不能讀 reservations');
 select throws_ok('select * from public.time_slots', '42501', null, 'anon 不能讀 time_slots');
@@ -42,7 +38,6 @@ select throws_ok($$select * from public.get_availability('2099-01-01')$$,
 select throws_ok('select private.is_staff()', '42501', null, 'anon 不能使用 private schema');
 reset role;
 
--- ---- 已登入但不是 staff ----
 select set_config('request.jwt.claims',
   '{"sub":"33333333-3333-3333-3333-333333333333","role":"authenticated"}', true);
 set local role authenticated;
@@ -66,7 +61,6 @@ select is(
   (select status::text from public.reservations where id = 'aaaaaaaa-0000-0000-0000-000000000001'),
   'pending', '非 staff 的 update 沒有改到任何資料');
 
--- ---- staff ----
 select set_config('request.jwt.claims',
   '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}', true);
 set local role authenticated;

@@ -22,7 +22,6 @@ export default function Header() {
   const { locale, path } = splitLocale(pathname);
   const d = getDictionary(locale);
   const other: Locale = locale === "en" ? "zh-tw" : "en";
-  // 後台只有英文版
   const showSwitch = !path.startsWith("/admin/");
 
   return (

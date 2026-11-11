@@ -8,7 +8,6 @@ export const env = {
 
 type Route = (init: RequestInit | undefined) => Response | Promise<Response>;
 
-// 依網址前綴回應的假 fetch;未定義的網址直接丟錯,確保測試不會打到真實網路
 export function mockFetch(routes: Record<string, Route>) {
   return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);

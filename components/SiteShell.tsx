@@ -4,7 +4,6 @@ import Header from "@/components/Header";
 import { getDictionary } from "@/lib/dictionary";
 import type { Locale } from "@/lib/i18n";
 
-// 兩個語系根 layout 共用的 <body> 內容
 export default function SiteShell({ locale, children }: { locale: Locale; children: React.ReactNode }) {
   return (
     <>
@@ -16,7 +15,6 @@ export default function SiteShell({ locale, children }: { locale: Locale; childr
       </a>
       <DemoBanner locale={locale} />
       <Header />
-      {/* tabIndex=-1:skip link 跳轉後焦點落在 main */}
       <main id="main" tabIndex={-1} className="flex-1 focus:outline-none">
         {children}
       </main>

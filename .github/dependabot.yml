@@ -1,7 +1,6 @@
-# 依賴更新:每週一次,新版本至少發布 7 天後才提(與 pnpm minimumReleaseAge 的供應鏈保護一致)
 version: 2
 updates:
-  - package-ecosystem: npm # pnpm 也用 npm ecosystem
+  - package-ecosystem: npm
     directory: /
     schedule:
       interval: weekly

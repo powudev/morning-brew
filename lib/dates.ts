@@ -1,5 +1,3 @@
-// 日期一律以台北時區計算,格式 YYYY-MM-DD(與資料庫 create_reservation() 的規則一致)
-
 export const BOOKING_DAYS = 30;
 
 const dateFormatter = new Intl.DateTimeFormat("en-CA", {
@@ -20,7 +18,6 @@ export function todayInTaipei(now: Date = new Date()): string {
   return dateFormatter.format(now);
 }
 
-/** 台北目前時間 HH:MM */
 export function nowTimeInTaipei(now: Date = new Date()): string {
   return timeFormatter.format(now);
 }

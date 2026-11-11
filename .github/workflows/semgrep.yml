@@ -1,4 +1,3 @@
-# 靜態安全掃描(SAST)。有發現即失敗;誤判以 `// nosemgrep: <rule-id>` 並寫明原因處理。
 name: Semgrep
 
 on:
@@ -6,7 +5,7 @@ on:
     branches: [main]
   pull_request:
   schedule:
-    - cron: "0 3 * * 1" # 每週一 03:00 UTC,規則庫更新後重掃
+    - cron: "0 3 * * 1"
   workflow_dispatch:
 
 permissions:

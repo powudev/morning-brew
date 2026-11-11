@@ -1,4 +1,3 @@
-// next build 之後執行:替 out/ 每個 HTML 加上逐頁 CSP(inline script hash)。邏輯與測試在 lib/csp.ts。
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { applyCsp } from "../lib/csp.ts";

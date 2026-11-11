@@ -1,5 +1,3 @@
-// 語系:英文為預設(根路徑),繁中在 /zh-tw/ 前綴。靜態輸出不能用 middleware,語系完全由路由決定。
-
 export const locales = ["en", "zh-tw"] as const;
 export type Locale = (typeof locales)[number];
 export const defaultLocale: Locale = "en";
@@ -19,13 +17,11 @@ export function htmlLang(locale: Locale): string {
 
 const withSlash = (path: string) => (path.endsWith("/") ? path : `${path}/`);
 
-/** 不含語系的路徑(如 /menu/)→ 該語系的網址 */
 export function localePath(locale: Locale, path: string): string {
   const normalized = withSlash(path.startsWith("/") ? path : `/${path}`);
   return normalized === "/" ? `${prefix[locale]}/` : `${prefix[locale]}${normalized}`;
 }
 
-/** 網址 → 語系與不含語系的路徑 */
 export function splitLocale(pathname: string): { locale: Locale; path: string } {
   const path = withSlash(pathname || "/");
   for (const locale of locales) {
@@ -37,7 +33,6 @@ export function splitLocale(pathname: string): { locale: Locale; path: string } 
   return { locale: defaultLocale, path };
 }
 
-/** 同一頁在另一語系的網址 */
 export function alternatePath(pathname: string, target: Locale): string {
   return localePath(target, splitLocale(pathname).path);
 }

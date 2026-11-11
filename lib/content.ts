@@ -2,7 +2,6 @@ import menu from "@/content/menu.json";
 import reviews from "@/content/reviews.json";
 import site from "@/content/site.json";
 
-// 公開頁內容一律讀 content/*.json(build 時打包),不讀資料庫
 export type Site = typeof site;
 export type Menu = typeof menu;
 export type MenuItem = Menu["items"][number];

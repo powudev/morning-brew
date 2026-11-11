@@ -4,7 +4,6 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fakeApi } from "@/components/admin/test-fake-api";
 
-// 與 Next.js 相同:useRouter() 每次回傳同一個物件(否則依賴 router 的 effect 會每次 render 重跑)
 const router = vi.hoisted(() => ({ replace: vi.fn() }));
 const replace = router.replace;
 vi.mock("next/navigation", () => ({ useRouter: () => router }));

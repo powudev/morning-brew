@@ -1,11 +1,9 @@
 import { z } from "zod";
 import { isIsoDate } from "@/lib/dates";
 
-// 不用 new Function 做 JIT:網站 CSP 不允許 unsafe-eval(否則每次載入都觸發違規報告),Cloudflare Workers 也禁止 eval
+// No eval-based JIT: the site's CSP forbids unsafe-eval (and so do Cloudflare Workers).
 z.config({ jitless: true });
 
-// 錯誤訊息是「代碼」,由前端依語系翻譯(content/i18n/*.json 的 form.errors)。
-// 前端表單與 Pages Function 共用同一份規則;資料庫的 check constraint 是最後一道防線。
 export const errorCodes = [
   "name_required",
   "name_too_long",
@@ -66,7 +64,6 @@ export const reservationSchema = z.strictObject(
 export type ReservationInput = z.infer<typeof reservationSchema>;
 export type FieldErrors = Partial<Record<keyof ReservationInput | "_form", ErrorCode>>;
 
-/** 每個欄位取第一則錯誤代碼;不屬於任何欄位的錯誤(例如多餘欄位)放在 _form */
 export function fieldErrors(error: z.ZodError): FieldErrors {
   const errors: FieldErrors = {};
   for (const issue of error.issues) {

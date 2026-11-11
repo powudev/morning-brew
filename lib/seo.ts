@@ -3,7 +3,6 @@ import { htmlLang, localePath, locales, type Locale } from "@/lib/i18n";
 
 const ogLocale: Record<Locale, string> = { en: "en_US", "zh-tw": "zh_TW" };
 
-/** 每頁 metadata:canonical + hreflang(兩語系 + x-default)+ Open Graph */
 export function pageMetadata({
   locale,
   path,

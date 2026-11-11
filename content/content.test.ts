@@ -1,4 +1,3 @@
-// 內容資料完整性:兩語系都要有、示範標示不能漏、字典 key 兩語系一致
 import { describe, expect, it } from "vitest";
 import en from "@/content/i18n/en.json";
 import zhTw from "@/content/i18n/zh-tw.json";

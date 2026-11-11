@@ -1,7 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { addDays, todayInTaipei } from "../../../lib/dates";
 
-// 透過本機 Supabase 的 DB 容器執行 SQL(只用在測試的資料準備與檢查)
 export function sql(query: string): string {
   return execFileSync(
     "docker",
@@ -12,7 +11,6 @@ export function sql(query: string): string {
 
 export const E2E_EMAIL_DOMAIN = "e2e.test";
 
-// 每個「裝置 project × 語系」用不同日期與專用時段,平行執行時互不影響
 export type Lane = `${"desktop" | "mobile"}-${"en" | "zh-tw"}`;
 const laneDays: Record<string, number> = { "desktop-en": 5, "desktop-zh-tw": 6, "mobile-en": 8, "mobile-zh-tw": 9 };
 const laneBase: Record<string, number> = {
@@ -28,11 +26,9 @@ export const concurrencyDay = 7;
 
 export const dateFor = (days: number) => addDays(todayInTaipei(), days);
 
-// E2E 專用時段 id(990000 起),每條 lane 兩個:06:00 容量 2、06:30 已額滿
 export const fixtureSlots = (lane: string) => ({ small: laneBase[lane] + 1, full: laneBase[lane] + 2 });
 export const concurrencySlotId = 990900;
 
-// 後台測試專用時段(不與訂位測試的 lane 共用,避免佔用名額)
 const adminDays: Record<string, number> = { desktop: 10, mobile: 11 };
 const adminBase: Record<string, number> = { desktop: 990500, mobile: 990600 };
 export const adminDate = (project: string) => dateFor(adminDays[project]);
@@ -46,7 +42,6 @@ export function cleanup(): void {
   `);
 }
 
-// 後台測試帳號(密碼每次執行隨機產生,經 process.env 傳給 worker)
 export const STAFF_EMAIL = `staff@${E2E_EMAIL_DOMAIN}`;
 export const CUSTOMER_EMAIL = `customer@${E2E_EMAIL_DOMAIN}`;
 

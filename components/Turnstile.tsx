@@ -32,7 +32,6 @@ function loadTurnstile(): Promise<TurnstileApi> {
   return scriptPromise;
 }
 
-/** Cloudflare Turnstile。token 只在前端暫存,真正的驗證在 Pages Function。重設請改變 key 讓它重新掛載。 */
 export default function Turnstile({
   onToken,
   language,

@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { jsonResponse } from "@/server/http";
 
-// _headers 不套用在 Pages Function 的回應上,API 的安全標頭要自己帶
 describe("jsonResponse", () => {
   it("JSON、不快取、禁止 MIME sniffing", async () => {
     const res = jsonResponse({ ok: true }, 201);

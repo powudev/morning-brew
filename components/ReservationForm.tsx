@@ -14,9 +14,7 @@ type SlotsState = { status: "idle" | "loading" | "ready" | "error"; slots: Slot[
 const initialValues = { name: "", email: "", phone: "", partySize: "2", date: "", slotId: "", note: "" };
 type Values = typeof initialValues;
 
-// 前端欄位順序(驗證失敗時聚焦第一個錯誤欄位)
 const fieldOrder = ["name", "email", "phone", "partySize", "date", "slotId", "note"] as const;
-
 
 const inputClass =
   "mt-1 block min-h-11 w-full rounded-lg border border-espresso/30 bg-foam px-3 py-2 aria-[invalid=true]:border-red-700";
@@ -67,7 +65,6 @@ export default function ReservationForm({ locale }: { locale: Locale }) {
   function update<K extends keyof Values>(key: K, value: Values[K]) {
     setValues((v) => {
       const next = { ...v, [key]: value };
-      // 換日期要重選時段;換人數後原本的時段若名額不足就取消選取
       if (key === "date") next.slotId = "";
       if (key === "partySize") {
         const selected = slotsState.slots.find((s) => String(s.slotId) === v.slotId);
@@ -114,14 +111,12 @@ export default function ReservationForm({ locale }: { locale: Locale }) {
       }
       const data = (await res.json().catch(() => ({}))) as { error?: string; fields?: FieldErrors };
       if (res.status === 400 && data.fields && Object.keys(data.fields).length > 0) {
-        // 伺服器端欄位驗證在 Turnstile 之前,token 未被使用,不需重設
         setErrors(data.fields);
         focusFirstError(data.fields);
         return;
       }
       const server = f.server as Record<string, string>;
       setFormError((data.error && server[data.error]) || f.server.generic);
-      // 其餘情況 token 已送去驗證(只能用一次),需重新完成 Turnstile
       resetTurnstile();
       if (res.status === 409 || res.status === 422) {
         setValues((v) => ({ ...v, slotId: "" }));

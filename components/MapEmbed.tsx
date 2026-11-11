@@ -6,7 +6,7 @@ import { getDictionary } from "@/lib/dictionary";
 import type { Locale } from "@/lib/i18n";
 
 const { lat, lng, embedTitle, note } = siteContent.map;
-const d = 0.004; // 地圖範圍(經緯度)
+const d = 0.004;
 const embedSrc =
   "https://www.openstreetmap.org/export/embed.html?" +
   new URLSearchParams({
@@ -16,7 +16,6 @@ const embedSrc =
   }).toString();
 const externalHref = `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=17/${lat}/${lng}`;
 
-// 第三方 iframe 點擊後才載入:首屏不被拖慢,也不在使用者同意前連線到外部
 export default function MapEmbed({ locale }: { locale: Locale }) {
   const [loaded, setLoaded] = useState(false);
   const t = getDictionary(locale).map;

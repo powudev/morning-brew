@@ -1,7 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { dateFor, STAFF_EMAIL } from "../e2e/support/db";
 
-// 不是測試:產生 README / 作品集用的截圖。資料全為 seed 的示範資料。
 const out = (page: Page, name: string) =>
   `docs/screenshots/${test.info().project.name}-${name}.png`;
 
@@ -41,7 +40,6 @@ test("後台:訂位清單", async ({ page }) => {
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Reservations" })).toBeVisible();
   await expect(page.getByRole("listitem").first()).toBeVisible();
-  // 畫面上的 staff email 是 E2E 臨時帳號,換成示範用字串
   await page.getByText(STAFF_EMAIL).evaluateAll((els) => els.forEach((el) => (el.textContent = "staff@example.com")));
   await shot(page, "admin-dashboard", true);
 });

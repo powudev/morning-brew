@@ -5,7 +5,6 @@ import { getDictionary } from "@/lib/dictionary";
 import { inter, notoTc, playfair } from "@/lib/fonts";
 import "./globals.css";
 
-// 不符合任何路由時的 404(兩個語系根 layout 之外),一頁同時提供英文與繁中
 export const metadata: Metadata = {
   title: "Page not found | 找不到這個頁面",
   robots: { index: false },

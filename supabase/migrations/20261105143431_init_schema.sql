@@ -1,20 +1,13 @@
--- Morning Brew(Demo project):訂位系統 schema + RLS
---
--- 權限模型
---   anon          → 沒有任何資料表或函式權限。公開頁內容來自 content/*.json。
---   authenticated → 只有登記在 staff 的使用者能讀取/更新訂位(RLS)。
---   service_role  → 只有 Cloudflare Pages Function 持有,透過 create_reservation() 寫入訂位。
-
--- ---------------------------------------------------------------------------
--- 型別與資料表
--- ---------------------------------------------------------------------------
+-- Access model:
+--   anon          no table or function privileges at all
+--   authenticated staff members (listed in public.staff) can read reservations and update status only
+--   service_role  used by the Pages Function to call create_reservation()
 
 create type public.reservation_status as enum ('pending', 'confirmed', 'cancelled');
 
--- 時段:每週固定(weekday)或特定日期(slot_date)二擇一;capacity 以「人數」計
 create table public.time_slots (
   id bigint generated always as identity primary key,
-  weekday smallint check (weekday between 0 and 6), -- 0 = 週日,同 extract(dow)
+  weekday smallint check (weekday between 0 and 6),
   slot_date date,
   start_time time not null,
   capacity integer not null check (capacity between 1 and 200),
@@ -46,7 +39,6 @@ create table public.reservations (
 
 create index reservations_date_slot_idx on public.reservations (reservation_date, slot_id);
 
--- 店家帳號:對應 auth.users
 create table public.staff (
   user_id uuid primary key references auth.users (id) on delete cascade,
   role text not null default 'admin' check (role in ('admin')),
@@ -69,14 +61,9 @@ create trigger reservations_set_updated_at
   before update on public.reservations
   for each row execute function public.set_updated_at();
 
--- ---------------------------------------------------------------------------
--- 權限:先全部收回,再逐項開放(不依賴平台預設 grant)
--- ---------------------------------------------------------------------------
-
 revoke all on public.time_slots, public.reservations, public.staff from anon, authenticated;
 revoke execute on function public.set_updated_at() from public, anon, authenticated;
 
--- is_staff() 放在不經 Data API 暴露的 schema,避免被當成 RPC 呼叫
 create schema if not exists private;
 revoke all on schema private from public, anon;
 grant usage on schema private to authenticated;
@@ -85,7 +72,8 @@ create function private.is_staff()
 returns boolean
 language sql
 stable
-security definer -- staff 表本身有 RLS,需以 owner 身分查詢
+-- Runs as owner because public.staff itself has RLS.
+security definer
 set search_path = ''
 as $$
   select exists (select 1 from public.staff where user_id = (select auth.uid()));
@@ -98,13 +86,11 @@ alter table public.time_slots enable row level security;
 alter table public.reservations enable row level security;
 alter table public.staff enable row level security;
 
--- staff:登入者只能看到自己那一列(前端用來判斷是否為店家)
 grant select on public.staff to authenticated;
 create policy "staff can read own row"
   on public.staff for select to authenticated
   using (user_id = (select auth.uid()));
 
--- reservations:staff 可讀全部;只能改 status(欄位層級 grant)
 grant select on public.reservations to authenticated;
 grant update (status) on public.reservations to authenticated;
 
@@ -117,7 +103,6 @@ create policy "staff can update reservation status"
   using ((select private.is_staff()))
   with check ((select private.is_staff()));
 
--- time_slots:staff 可讀、新增、修改(停用改 is_active,不刪除以保留訂位關聯)
 grant select, insert, update (start_time, capacity, is_active) on public.time_slots to authenticated;
 
 create policy "staff can read time slots"
@@ -133,11 +118,6 @@ create policy "staff can update time slots"
   using ((select private.is_staff()))
   with check ((select private.is_staff()));
 
--- ---------------------------------------------------------------------------
--- 訂位函式(只給 service_role,也就是 Pages Function)
--- ---------------------------------------------------------------------------
-
--- 某日可訂時段與剩餘人數(給 /reserve 表單顯示)
 create function public.get_availability(p_date date)
 returns table (slot_id bigint, start_time time, capacity integer, remaining integer)
 language sql
@@ -158,8 +138,6 @@ as $$
   order by s.start_time;
 $$;
 
--- 建立訂位:鎖住時段列,在同一交易內檢查容量,避免同時送出造成超賣。
--- 錯誤以 message 代碼回傳,由 Pages Function 轉成使用者看得懂的訊息。
 create function public.create_reservation(
   p_slot_id bigint,
   p_date date,
@@ -184,6 +162,7 @@ begin
     raise exception using errcode = 'P0001', message = 'INVALID_DATE';
   end if;
 
+  -- Lock the slot row so concurrent bookings can't oversell it.
   select * into v_slot
   from public.time_slots
   where id = p_slot_id
@@ -191,7 +170,7 @@ begin
 
   if not found
     or not v_slot.is_active
-    -- 用 is not distinct from:每週時段的 slot_date 是 null,用 = 會讓整個條件變 null 而放行
+    -- "is not distinct from": weekly slots have a null slot_date, and "=" would let NULL through.
     or not (v_slot.slot_date is not distinct from p_date
             or (v_slot.slot_date is null and v_slot.weekday = extract(dow from p_date)))
   then
@@ -227,6 +206,5 @@ grant execute on function public.get_availability(date) to service_role;
 grant execute on function public.create_reservation(bigint, date, text, text, smallint, text, text)
   to service_role;
 
--- 函式為 security invoker,service_role 需有資料表權限(明寫,不依賴平台預設)
 grant select, insert, update on public.time_slots, public.reservations to service_role;
 grant select on public.staff to service_role;

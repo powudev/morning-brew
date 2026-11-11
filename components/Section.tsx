@@ -1,4 +1,3 @@
-// 首頁等長頁面的區塊:以 h2 命名 region,方便輔助科技導覽
 export default function Section({
   id,
   title,

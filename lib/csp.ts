@@ -1,9 +1,7 @@
 import { createHash } from "node:crypto";
 
-// 建置後處理(scripts/apply-csp.mts)用:Next 靜態輸出無法用 nonce,
-// 改為逐頁計算 inline script 的 sha256,寫進該頁的 <meta> CSP。
-// frame-ancestors 等 meta 不支援的 directive 放在 public/_headers。
-
+// Static export can't use nonces, so each page gets a CSP with the sha256 of its inline scripts.
+// frame-ancestors can't be set in a <meta> CSP; it lives in public/_headers.
 const TURNSTILE = "https://challenges.cloudflare.com";
 const OSM = "https://www.openstreetmap.org";
 const META_PREFIX = '<meta http-equiv="Content-Security-Policy"';
@@ -11,7 +9,6 @@ const META_PREFIX = '<meta http-equiv="Content-Security-Policy"';
 const SCRIPT_RE = /<script\b([^>]*)>([\s\S]*?)<\/script>/gi;
 const EXECUTABLE_TYPES = new Set(["", "text/javascript", "application/javascript", "module"]);
 
-/** 頁面中會被瀏覽器執行的 inline script 內容(原樣,不解碼) */
 export function inlineScripts(html: string): string[] {
   const scripts: string[] = [];
   for (const [, attrs, body] of html.matchAll(SCRIPT_RE)) {
@@ -27,7 +24,7 @@ export function scriptHash(script: string): string {
 }
 
 function origin(url: string): string {
-  const parsed = new URL(url); // 不是合法 URL 會丟錯
+  const parsed = new URL(url);
   if (parsed.protocol !== "https:" && parsed.protocol !== "http:") throw new Error(`Supabase URL 必須是 http(s):${url}`);
   return parsed.origin;
 }
@@ -36,7 +33,7 @@ export function buildCsp({ scriptHashes, supabaseUrl }: { scriptHashes: string[]
   const directives: [string, string[]][] = [
     ["default-src", ["'self'"]],
     ["script-src", ["'self'", ...new Set(scriptHashes), TURNSTILE]],
-    // React 的 style 屬性與 Turnstile 需要 inline style;style 無法執行程式,風險遠低於 script
+    // Inline styles are allowed (React style props, Turnstile); scripts are not.
     ["style-src", ["'self'", "'unsafe-inline'"]],
     ["img-src", ["'self'", "data:"]],
     ["font-src", ["'self'"]],
@@ -49,7 +46,6 @@ export function buildCsp({ scriptHashes, supabaseUrl }: { scriptHashes: string[]
   return directives.map(([name, values]) => `${name} ${values.join(" ")}`).join("; ");
 }
 
-/** 在 <head> 的 charset 之後(所有 script 之前)插入該頁專屬的 CSP meta */
 export function applyCsp(html: string, { supabaseUrl }: { supabaseUrl: string }): string {
   if (html.includes(META_PREFIX)) throw new Error("CSP meta already present");
   const head = html.match(/<head>(<meta charSet="utf-8"\/>)?/i);

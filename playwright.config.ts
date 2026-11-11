@@ -1,8 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 import { localSupabase } from "./tests/e2e/support/local-supabase";
 
-// Cloudflare 官方 Turnstile 測試金鑰(只能用在測試):1x… 永遠通過、2x… 永遠失敗
-// https://developers.cloudflare.com/turnstile/troubleshooting/testing/
 export const TURNSTILE_TEST_SECRET_PASS = "1x0000000000000000000000000000000AA";
 export const TURNSTILE_TEST_SECRET_FAIL = "2x0000000000000000000000000000000AA";
 
@@ -11,7 +9,6 @@ export const TURNSTILE_FAIL_PORT = 8789;
 
 const supabase = localSupabase();
 
-// 測試 `pnpm build:e2e` 產出的 out/,用 wrangler 模擬 Cloudflare Pages(含 functions/)
 function pagesDev(port: number, turnstileSecret: string) {
   return {
     command: [

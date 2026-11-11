@@ -1,4 +1,3 @@
-// 整合測試:用真實的本機 Supabase(Auth + PostgREST + RLS)驗證後台 API。需先 `supabase start`。
 import { createClient } from "@supabase/supabase-js";
 import { randomBytes } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";

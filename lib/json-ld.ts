@@ -41,7 +41,6 @@ export function cafeJsonLd(locale: Locale) {
   };
 }
 
-// JSON.stringify 不會跳脫 <,避免 </script> 注入
 export function serializeJsonLd(data: unknown): string {
   return JSON.stringify(data).replace(/</g, "\\u003c");
 }

@@ -13,10 +13,8 @@ import {
 } from "./support/db";
 import { eachLocale, getDictionary, interpolateForTest, localePath } from "./support/i18n";
 
-// seed 的一般時段(07:00 以後、有名額);06:xx 是 E2E 專用的小容量時段
 const regularSlot = (locale: Parameters<typeof getDictionary>[0]) =>
   new RegExp(`^(0[7-9]|1\\d):\\d\\d${interpolateForTest(getDictionary(locale).form.slotRemaining, "")}`);
-// Next.js 的 route announcer 也是 role=alert,只看 main 裡的
 const formAlert = (page: Page) => page.getByRole("main").getByRole("alert");
 
 const emailFor = (label: string, project: string) => `${label}-${project}-${Date.now()}@${E2E_EMAIL_DOMAIN}`;
@@ -32,7 +30,6 @@ async function fillForm(
   await page.getByRole("radio", { name: slot }).first().check();
 }
 
-// Turnstile 測試 site key 會自動通過;等 token 寫入隱藏欄位
 async function waitForTurnstile(page: Page) {
   await expect(page.locator('input[name="cf-turnstile-response"]')).toHaveValue(/.+/, { timeout: 15_000 });
 }
@@ -96,7 +93,6 @@ eachLocale((locale) => {
       });
       await waitForTurnstile(page);
 
-      // 另一位顧客搶先訂走 1 位,剩 1 位 < 2 人
       sql(`insert into public.reservations (slot_id, reservation_date, name, email, party_size)
            values (${small}, '${date}', 'E2E race', 'race-${lane}@${E2E_EMAIL_DOMAIN}', 1)`);
       await submit(page).click();

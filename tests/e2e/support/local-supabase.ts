@@ -1,6 +1,5 @@
 import { execFileSync } from "node:child_process";
 
-/** 讀取本機 Supabase 的 API URL、anon key 與 service role key(supabase start 產生的本機值,非正式金鑰) */
 export function localSupabase(): { url: string; anonKey: string; serviceKey: string } {
   const out = execFileSync("supabase", ["status", "-o", "env"], { encoding: "utf8" });
   const get = (key: string) => out.match(new RegExp(`^${key}="(.*)"$`, "m"))?.[1] ?? "";

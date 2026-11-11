@@ -1,5 +1,3 @@
-// 後台訂位資料:資料庫列 → 前端格式、排序、統計(純函式)
-
 export const reservationStatuses = ["pending", "confirmed", "cancelled"] as const;
 export type ReservationStatus = (typeof reservationStatuses)[number];
 

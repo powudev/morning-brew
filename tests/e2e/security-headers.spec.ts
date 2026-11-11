@@ -9,7 +9,6 @@ const pages = [
   "/no-such-page/",
 ];
 
-/** 從 <meta http-equiv="Content-Security-Policy"> 取出指定 directive 的值 */
 function directive(policy: string, name: string): string[] | undefined {
   const part = policy
     .split(";")
@@ -82,7 +81,7 @@ test.describe("CSP(script 只允許自己的檔案與逐頁 hash)", () => {
     });
     expect(executed).toBe(false);
     await expect.poll(() => cspViolations.some((v) => v.startsWith("script-src"))).toBe(true);
-    cspViolations.length = 0; // 這個違規是刻意觸發的
+    cspViolations.length = 0;
   });
 
   test("外部網域的 script 被擋", async ({ page, cspViolations }) => {
