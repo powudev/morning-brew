@@ -11,11 +11,8 @@ online and staff manage reservations from a private dashboard. It is built to sh
 can be **fast, accessible, and secure by design**, with every change tested and deployed
 automatically.
 
-- **Live demo:** [cafe.powu.dev](https://cafe.powu.dev) _(coming soon)_
+- **Live demo:** [cafe.powu.dev](https://cafe.powu.dev)
 - **Video walkthrough (Loom):** _coming soon_
-
-> _Status (Nov 2026): the live site is not deployed yet. The badges above appear once the repository
-> is public, and the Lighthouse scores below were measured on a local production build._
 
 ## Why this matters if your app was built with AI
 
@@ -172,29 +169,79 @@ Counts as of November 2026:
 Some real problems the tests caught during development:
 - a database function let a weekly time slot be booked on the wrong weekday (a `NULL` comparison bug), caught by pgTAP;
 - English pages lost their fonts because a Chinese-font CSS variable didn't exist there, caught by a screenshot review and fixed after writing a failing E2E test;
-- the validation library probed `eval` on every page load, which the CSP reports as a violation, so it was switched to its no-eval mode.
+- the validation library probed `eval` on every page load, which the CSP reports as a violation, so it was switched to its no-eval mode;
+- after launch, the hosting provider silently injected an analytics script on the custom domain. The CSP blocked it (so no visitor was tracked), and it was then switched off at the source.
 
 ### Lighthouse
 
-Measured locally on the production build (`wrangler pages dev`, not the live CDN), 5 pages on mobile and desktop:
+Measured on the live site (cafe.powu.dev) on 11 November 2026: home, menu, reservation and the
+Chinese home page, each on mobile and desktop.
 
 | Performance | Accessibility | Best Practices | SEO |
 |---|---|---|---|
-| 100 | 100 | 100 | 100 |
+| 99–100 | 100 | 100 | 100 |
 
-(The staff sign-in page scores lower on SEO on purpose: it is marked `noindex`.)
+Largest Contentful Paint: about 0.5 s on desktop and 1.2 s on mobile. (The staff sign-in page is
+not included: it is marked `noindex` on purpose.)
 
-## CI/CD
+## CI/CD and deployment
+
+Every change goes through the same automated path. Nothing reaches the live site unless every test
+layer passes.
 
 ```mermaid
-flowchart LR
-  push[push / PR] --> lint[Lint] --> tsc[Typecheck] --> unit[Unit tests]
-  unit --> sb[Start local Supabase] --> pgtap[DB tests] --> int[Integration tests]
-  int --> build[Build] --> e2e[E2E tests]
-  e2e -->|main only| deploy[Deploy to Cloudflare Pages]
+flowchart TB
+  dev([Developer]) -->|git push / pull request| gh[GitHub<br/>powudev/morning-brew]
+  bot([Dependabot<br/>weekly, 7-day cooldown]) -->|update PR| gh
+
+  gh --> ci
+  gh --> sg[Semgrep workflow<br/>static security scan<br/>every push + weekly]
+
+  subgraph ci [CI job: every push and PR]
+    direction TB
+    c1[Lint + typecheck] --> c2[Unit tests<br/>Vitest]
+    c2 --> c3[Start local Supabase<br/>migrations + seed]
+    c3 --> c4[Database tests<br/>pgTAP: RLS, privileges]
+    c4 --> c5[Integration tests<br/>real Auth + API]
+    c5 --> c6[Build<br/>local keys + Turnstile test keys]
+    c6 --> c7[E2E tests<br/>Playwright, desktop + mobile]
+  end
+
+  c7 -->|any step fails| stop[Stop: nothing deployed<br/>test report uploaded]
+  c7 -->|all green, main branch,<br/>DEPLOY_ENABLED = true| dp
+
+  subgraph dp [Deploy job: main only]
+    direction TB
+    d1[Check config<br/>all variables present, HTTPS URLs] --> d2[Production build<br/>public keys from GitHub Variables]
+    d2 --> d3[Add per-page CSP<br/>hash every inline script]
+    d3 --> d4[wrangler pages deploy<br/>static site + Functions]
+  end
+
+  d4 -->|CLOUDFLARE_API_TOKEN<br/>Pages edit only| cf
+
+  subgraph cf [Cloudflare]
+    direction TB
+    pages[Pages: static pages<br/>security headers]
+    fn[Pages Functions<br/>/api/reserve, /api/slots]
+    sec[(Encrypted env<br/>service key, Turnstile secret)]
+    sec -.-> fn
+  end
+
+  cf --> site([cafe.powu.dev])
+  fn -->|server only| db[(Supabase Postgres<br/>RLS)]
+  mig[supabase db push<br/>run manually, reviewed first] -.->|schema changes| db
+
+  classDef fail fill:#fde2e1,stroke:#c0392b,color:#7b241c
+  classDef ok fill:#e3f4e8,stroke:#2e7d4f,color:#1e4d33
+  class stop fail
+  class site ok
 ```
 
-If any step fails, nothing is deployed. Semgrep runs as a separate workflow on every push and weekly.
+- **CI** runs on every push and pull request, including Dependabot's weekly update PRs.
+- **Deploy** runs only on `main`, after CI is green. It uses a Cloudflare token that can only edit
+  Pages, and the production secrets live in Cloudflare's encrypted settings, not in GitHub.
+- **Database changes** are not applied automatically: `supabase db push` is run by hand after review,
+  so a bad migration can't reach production just because tests passed.
 
 ## Local development
 
