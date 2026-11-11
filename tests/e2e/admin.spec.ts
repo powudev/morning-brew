@@ -14,34 +14,34 @@ async function signIn(page: Page, email: string, pass = password()) {
 const axe = (page: Page) =>
   new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
 
-test.describe("後台:權限", () => {
-  test("未登入進 /admin/ 被導回登入頁", async ({ page }) => {
+test.describe("staff area: access", () => {
+  test("signed-out visit to /admin/ redirects to sign-in", async ({ page }) => {
     await page.goto("/admin/");
     await expect(page).toHaveURL(/\/admin\/login\/$/);
     await expect(page.getByRole("heading", { level: 1, name: "Staff sign in" })).toBeVisible();
   });
 
-  test("密碼錯誤顯示訊息,留在登入頁", async ({ page }) => {
+  test("wrong password shows a message and stays on sign-in", async ({ page }) => {
     await signIn(page, STAFF_EMAIL, "wrong-password");
     await expect(page.getByRole("main").getByRole("alert")).toHaveText("Incorrect email or password.");
     await expect(page).toHaveURL(/\/admin\/login\/$/);
   });
 
-  test("非 staff 帳號被拒,session 被清除", async ({ page }) => {
+  test("non-staff account is refused and its session cleared", async ({ page }) => {
     await signIn(page, CUSTOMER_EMAIL);
     await expect(page.getByRole("main").getByRole("alert")).toHaveText("This account doesn't have staff access.");
     await page.goto("/admin/");
     await expect(page).toHaveURL(/\/admin\/login\/$/);
   });
 
-  test("登入頁沒有 WCAG 2.1 AA 違規", async ({ page }) => {
+  test("sign-in page has no WCAG 2.1 AA violations", async ({ page }) => {
     await page.goto("/admin/login/");
     expect((await axe(page)).violations.map((v) => v.id)).toEqual([]);
   });
 });
 
-test.describe("後台:staff", () => {
-  test("登入 → 依日期查看訂位 → 確認訂位(寫入資料庫,重新整理後仍在)→ 登出", async ({ page }, testInfo) => {
+test.describe("staff area: staff", () => {
+  test("sign in → view bookings by date → confirm one (saved, survives reload) → sign out", async ({ page }, testInfo) => {
     const date = adminDate(testInfo.project.name);
     const { early } = adminSlots(testInfo.project.name);
     const name = `Admin E2E ${testInfo.project.name}`;
@@ -76,7 +76,7 @@ test.describe("後台:staff", () => {
     await expect(page).toHaveURL(/\/admin\/login\/$/);
   });
 
-  test("狀態篩選只顯示該狀態", async ({ page }, testInfo) => {
+  test("status filter shows only that status", async ({ page }, testInfo) => {
     const date = adminDate(testInfo.project.name);
     const { early, late } = adminSlots(testInfo.project.name);
     const tag = `Filter ${testInfo.project.name}`;

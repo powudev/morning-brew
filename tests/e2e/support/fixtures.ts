@@ -19,7 +19,7 @@ export const test = base.extend<{ cspViolations: string[] }>({
         });
       }, PREFIX);
       await use(violations);
-      expect(violations, "頁面不應觸發 CSP 違規").toEqual([]);
+      expect(violations, "page should not trigger CSP violations").toEqual([]);
     },
     { auto: true },
   ],

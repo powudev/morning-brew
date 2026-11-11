@@ -6,6 +6,6 @@ export function localSupabase(): { url: string; anonKey: string; serviceKey: str
   const url = get("API_URL");
   const anonKey = get("ANON_KEY");
   const serviceKey = get("SERVICE_ROLE_KEY");
-  if (!url || !anonKey || !serviceKey) throw new Error("本機 Supabase 未啟動:請先執行 supabase start");
+  if (!url || !anonKey || !serviceKey) throw new Error("Local Supabase is not running: run supabase start first");
   return { url, anonKey, serviceKey };
 }

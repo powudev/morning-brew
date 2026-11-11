@@ -25,7 +25,7 @@ export function scriptHash(script: string): string {
 
 function origin(url: string): string {
   const parsed = new URL(url);
-  if (parsed.protocol !== "https:" && parsed.protocol !== "http:") throw new Error(`Supabase URL 必須是 http(s):${url}`);
+  if (parsed.protocol !== "https:" && parsed.protocol !== "http:") throw new Error(`Supabase URL must be http(s): ${url}`);
   return parsed.origin;
 }
 
@@ -49,7 +49,7 @@ export function buildCsp({ scriptHashes, supabaseUrl }: { scriptHashes: string[]
 export function applyCsp(html: string, { supabaseUrl }: { supabaseUrl: string }): string {
   if (html.includes(META_PREFIX)) throw new Error("CSP meta already present");
   const head = html.match(/<head>(<meta charSet="utf-8"\/>)?/i);
-  if (!head || head.index === undefined) throw new Error("找不到 <head>,無法插入 CSP");
+  if (!head || head.index === undefined) throw new Error("no <head> found, cannot insert CSP");
   const policy = buildCsp({ scriptHashes: inlineScripts(html).map(scriptHash), supabaseUrl });
   const at = head.index + head[0].length;
   return `${html.slice(0, at)}${META_PREFIX} content="${policy}"/>${html.slice(at)}`;

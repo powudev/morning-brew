@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-email="${1:?用法: $0 <email>}"
-read -rsp "密碼(至少 8 碼): " password
+email="${1:?usage: $0 <email>}"
+read -rsp "Password (min. 8 characters): " password
 echo
 
 status_env="$(supabase status -o env)"
@@ -11,7 +11,7 @@ service_key="$(sed -n 's/^SERVICE_ROLE_KEY="\(.*\)"$/\1/p' <<<"$status_env")"
 
 case "$api_url" in
   http://127.0.0.1:*|http://localhost:*) ;;
-  *) echo "只允許對本機 Supabase 執行(API_URL=$api_url)" >&2; exit 1 ;;
+  *) echo "Refusing to run against a non-local Supabase (API_URL=$api_url)" >&2; exit 1 ;;
 esac
 
 user_id="$(
@@ -29,4 +29,4 @@ docker exec -i "supabase_db_${project_id}" \
 insert into public.staff (user_id, role) values (:'uid', 'admin') on conflict do nothing;
 SQL
 
-echo "已建立店家帳號 $email($user_id)"
+echo "Created staff account $email ($user_id)"

@@ -8,7 +8,7 @@ const page = (body: string) =>
   `<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><title>t</title></head><body>${body}</body></html>`;
 
 describe("inlineScripts", () => {
-  it("取出會執行的 inline script,略過外部檔案與 JSON 資料", () => {
+  it("extracts executable inline scripts, skipping external files and JSON data", () => {
     const html = page(
       [
         `<script src="/_next/static/a.js" async=""></script>`,
@@ -26,21 +26,21 @@ describe("inlineScripts", () => {
     ]);
   });
 
-  it("保留 script 內容原樣(含換行與跳脫字元),hash 才會對", () => {
+  it("keeps script content verbatim (newlines and escapes) so hashes match", () => {
     const body = 'self.__next_f.push([1,"a\\u003c/script\\u003e\\n"])\n';
     expect(inlineScripts(page(`<script>${body}</script>`))).toEqual([body]);
   });
 });
 
 describe("scriptHash", () => {
-  it("為 CSP 的 sha256 來源格式", () => {
+  it("uses the CSP sha256 source format", () => {
     expect(scriptHash("alert(1)")).toBe(sha("alert(1)"));
     expect(scriptHash("中文")).toBe(sha("中文"));
   });
 });
 
 describe("buildCsp", () => {
-  it("script-src 只有 self、逐頁 hash 與 Turnstile,沒有 unsafe-inline / unsafe-eval", () => {
+  it("script-src has only self, page hashes and Turnstile, no unsafe-inline / unsafe-eval", () => {
     const policy = buildCsp({ scriptHashes: ["'sha256-AAA='"], supabaseUrl: "https://abc.supabase.co" });
     const directives = Object.fromEntries(
       policy.split("; ").map((d) => {
@@ -59,16 +59,16 @@ describe("buildCsp", () => {
     expect(directives["script-src"]).not.toContain("'unsafe-inline'");
   });
 
-  it("hash 去重複", () => {
+  it("deduplicates hashes", () => {
     const policy = buildCsp({ scriptHashes: ["'sha256-A='", "'sha256-A='"], supabaseUrl: "" });
     expect(policy).toContain("script-src 'self' 'sha256-A=' https://challenges.cloudflare.com;");
   });
 
-  it("沒有 Supabase URL 時 connect-src 只允許 self", () => {
+  it("connect-src allows only self without a Supabase URL", () => {
     expect(buildCsp({ scriptHashes: [], supabaseUrl: "" })).toContain("connect-src 'self';");
   });
 
-  it("Supabase URL 只取 origin,拒絕非 http(s) 或含 CSP 分隔字元的值", () => {
+  it("uses only the Supabase origin and rejects non-http(s) values", () => {
     expect(buildCsp({ scriptHashes: [], supabaseUrl: "https://abc.supabase.co/rest/v1" })).toContain(
       "connect-src 'self' https://abc.supabase.co;",
     );
@@ -80,27 +80,27 @@ describe("buildCsp", () => {
 describe("applyCsp", () => {
   const html = page(`<script>a()</script><script src="/b.js"></script><script>c()</script>`);
 
-  it("在 <head> 最前面(所有 script 之前)插入 CSP meta,含該頁所有 inline script 的 hash", () => {
+  it("inserts the CSP meta at the top of <head>, before any script, with every inline script hash", () => {
     const out = applyCsp(html, { supabaseUrl: "" });
     const meta = out.match(/<meta http-equiv="Content-Security-Policy" content="([^"]+)"\/>/);
     expect(meta).not.toBeNull();
-    // nosemgrep: javascript.lang.security.audit.unknown-value-with-script-tag.unknown-value-with-script-tag -- 測試 fixture 字串
+    // nosemgrep: javascript.lang.security.audit.unknown-value-with-script-tag.unknown-value-with-script-tag -- test fixture string
     expect(out.indexOf(meta![0])).toBeLessThan(out.indexOf("<script"));
     expect(out.indexOf(meta![0])).toBe(out.indexOf("<head>") + "<head>".length + '<meta charSet="utf-8"/>'.length);
     expect(meta![1]).toContain(`${sha("a()")} ${sha("c()")}`);
   });
 
-  it("其餘內容不變", () => {
+  it("leaves the rest of the page unchanged", () => {
     const out = applyCsp(html, { supabaseUrl: "" });
     expect(out.replace(/<meta http-equiv="Content-Security-Policy" content="[^"]+"\/>/, "")).toBe(html);
   });
 
-  it("已有 CSP meta 時拒絕重複處理", () => {
+  it("refuses to process a page that already has a CSP meta", () => {
     const once = applyCsp(html, { supabaseUrl: "" });
     expect(() => applyCsp(once, { supabaseUrl: "" })).toThrow(/already/);
   });
 
-  it("找不到 <head> 時丟出錯誤,不產生沒有 CSP 的頁面", () => {
+  it("throws when <head> is missing instead of emitting a page without CSP", () => {
     expect(() => applyCsp("<html><body></body></html>", { supabaseUrl: "" })).toThrow(/<head>/);
   });
 });

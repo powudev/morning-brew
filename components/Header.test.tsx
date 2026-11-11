@@ -9,12 +9,12 @@ import Header from "@/components/Header";
 
 const mainNav = () => screen.getByRole("navigation", { name: /Main menu|主選單/ });
 
-describe("Header(英文)", () => {
+describe("Header (English)", () => {
   beforeEach(() => {
     pathname.value = "/";
   });
 
-  it("英文選單連結不加語系前綴,目前頁面標示 aria-current", () => {
+  it("English nav links have no locale prefix and mark the current page with aria-current", () => {
     pathname.value = "/menu/";
     render(<Header />);
     const nav = mainNav();
@@ -24,14 +24,14 @@ describe("Header(英文)", () => {
     expect(current).toHaveAttribute("href", "/menu/");
   });
 
-  it("首頁只在 / 時標示", () => {
+  it("Home is marked current only on /", () => {
     pathname.value = "/about/";
     render(<Header />);
     expect(screen.getByRole("link", { name: "Home" })).not.toHaveAttribute("aria-current");
     expect(screen.getByRole("link", { name: "About" })).toHaveAttribute("aria-current", "page");
   });
 
-  it("語言切換器連到同一頁的繁中版", () => {
+  it("language switcher links to the same page in Traditional Chinese", () => {
     pathname.value = "/menu/";
     render(<Header />);
     const link = screen.getByRole("link", { name: "繁體中文版本" });
@@ -42,8 +42,8 @@ describe("Header(英文)", () => {
   });
 });
 
-describe("Header(繁中)", () => {
-  it("中文選單連結加 /zh-tw 前綴,子頁面標示所屬選單", () => {
+describe("Header (Traditional Chinese)", () => {
+  it("Chinese nav links use the /zh-tw prefix and sub-pages mark their parent menu item", () => {
     pathname.value = "/zh-tw/reserve/done/";
     render(<Header />);
     expect(mainNav()).toHaveAccessibleName("主選單");
@@ -53,13 +53,13 @@ describe("Header(繁中)", () => {
     expect(screen.getByRole("link", { name: "首頁" })).toHaveAttribute("href", "/zh-tw/");
   });
 
-  it("中文首頁標示首頁", () => {
+  it("Chinese home page marks Home as current", () => {
     pathname.value = "/zh-tw/";
     render(<Header />);
     expect(screen.getByRole("link", { name: "首頁" })).toHaveAttribute("aria-current", "page");
   });
 
-  it("語言切換器連到同一頁的英文版", () => {
+  it("language switcher links to the same page in English", () => {
     pathname.value = "/zh-tw/menu/";
     render(<Header />);
     const link = screen.getByRole("link", { name: "English version" });
@@ -68,8 +68,8 @@ describe("Header(繁中)", () => {
   });
 });
 
-describe("Header(後台)", () => {
-  it("後台沒有中文版,不顯示語言切換器", () => {
+describe("Header (staff area)", () => {
+  it("staff area has no Chinese version, so no language switcher", () => {
     pathname.value = "/admin/";
     render(<Header />);
     expect(screen.queryByRole("link", { name: "繁體中文版本" })).toBeNull();

@@ -13,7 +13,7 @@ const valid = {
 };
 
 describe("reservationSchema", () => {
-  it("接受合法輸入,並把字串轉成需要的型別、去除前後空白", () => {
+  it("accepts valid input, coerces types and trims whitespace", () => {
     const result = reservationSchema.parse(valid);
     expect(result).toEqual({
       name: "王小明",
@@ -27,7 +27,7 @@ describe("reservationSchema", () => {
     });
   });
 
-  it("電話與備註可省略", () => {
+  it("phone and note are optional", () => {
     const rest: Partial<typeof valid> = { ...valid };
     delete rest.phone;
     delete rest.note;
@@ -35,33 +35,33 @@ describe("reservationSchema", () => {
   });
 
   const cases: [string, Partial<Record<keyof typeof valid, unknown>>, string][] = [
-    ["空白姓名", { name: "   " }, "name"],
-    ["姓名超過 100 字", { name: "a".repeat(101) }, "name"],
-    ["email 格式錯誤", { email: "not-an-email" }, "email"],
-    ["電話含英文字母", { phone: "abc" }, "phone"],
-    ["人數 0", { partySize: "0" }, "partySize"],
-    ["人數 9", { partySize: "9" }, "partySize"],
-    ["人數非整數", { partySize: "2.5" }, "partySize"],
-    ["日期格式錯誤", { date: "2026/11/10" }, "date"],
-    ["不存在的日期", { date: "2026-02-30" }, "date"],
-    ["未選時段", { slotId: "" }, "slotId"],
-    ["備註超過 500 字", { note: "a".repeat(501) }, "note"],
-    ["未完成 Turnstile", { turnstileToken: "" }, "turnstileToken"],
+    ["blank name", { name: "   " }, "name"],
+    ["name over 100 characters", { name: "a".repeat(101) }, "name"],
+    ["invalid email", { email: "not-an-email" }, "email"],
+    ["phone with letters", { phone: "abc" }, "phone"],
+    ["party size 0", { partySize: "0" }, "partySize"],
+    ["party size 9", { partySize: "9" }, "partySize"],
+    ["non-integer party size", { partySize: "2.5" }, "partySize"],
+    ["malformed date", { date: "2026/11/10" }, "date"],
+    ["nonexistent date", { date: "2026-02-30" }, "date"],
+    ["no slot selected", { slotId: "" }, "slotId"],
+    ["note over 500 characters", { note: "a".repeat(501) }, "note"],
+    ["Turnstile not completed", { turnstileToken: "" }, "turnstileToken"],
   ];
 
   for (const [label, override, field] of cases) {
-    it(`拒絕:${label}`, () => {
+    it(`rejects ${label}`, () => {
       const result = reservationSchema.safeParse({ ...valid, ...override });
       expect(result.success).toBe(false);
       if (!result.success) expect(Object.keys(fieldErrors(result.error))).toContain(field);
     });
   }
 
-  it("拒絕未定義的多餘欄位(避免把 status 等欄位偷渡進來)", () => {
+  it("rejects unknown extra fields (so status cannot be smuggled in)", () => {
     const result = reservationSchema.safeParse({ ...valid, status: "confirmed" });
     expect(result.success).toBe(false);
   });
-  it("空白 email 回 email_required,而不是格式錯誤", () => {
+  it("blank email returns email_required, not a format error", () => {
     const result = reservationSchema.safeParse({ ...valid, email: "  " });
     expect(result.success).toBe(false);
     if (!result.success) expect(fieldErrors(result.error).email).toBe("email_required");
@@ -69,7 +69,7 @@ describe("reservationSchema", () => {
 });
 
 describe("fieldErrors", () => {
-  it("每個欄位回傳第一則錯誤代碼(由前端依語系翻譯)", () => {
+  it("returns the first error code per field (translated by the frontend)", () => {
     const result = reservationSchema.safeParse({ ...valid, name: "", email: "x" });
     expect(result.success).toBe(false);
     if (!result.success) {
@@ -79,7 +79,7 @@ describe("fieldErrors", () => {
     }
   });
 
-  it("回傳的代碼都在 errorCodes 清單內", () => {
+  it("all returned codes are listed in errorCodes", () => {
     const result = reservationSchema.safeParse({
       name: "",
       email: "",
@@ -97,8 +97,8 @@ describe("fieldErrors", () => {
   });
 });
 
-describe("zod 設定", () => {
-  it("jitless:驗證時不使用 eval / new Function(CSP 不允許 unsafe-eval,Workers 也禁止)", async () => {
+describe("zod config", () => {
+  it("jitless: validation never uses eval / new Function (CSP and Workers forbid it)", async () => {
     const { globalConfig } = await import("zod/v4/core");
     expect(globalConfig.jitless).toBe(true);
     const original = globalThis.Function;

@@ -10,8 +10,8 @@ eachLocale((locale) => {
   const d = getDictionary(locale);
   const url = (path: string) => localePath(locale, path);
 
-  test.describe(`[${locale}] 首頁`, () => {
-    test("顯示店名、該語系 lang、示範專案聲明與訂位 CTA", async ({ page }) => {
+  test.describe(`[${locale}] home page`, () => {
+    test("shows the shop name, localized lang, demo notice and booking CTA", async ({ page }) => {
       await page.goto(url("/"));
       await expect(page).toHaveTitle(/Morning Brew/);
       await expect(page.locator("html")).toHaveAttribute("lang", htmlLang(locale));
@@ -22,12 +22,12 @@ eachLocale((locale) => {
       for (const cta of await ctas.all()) await expect(cta).toHaveAttribute("href", url("/reserve/"));
     });
 
-    test("評論標示為示範內容", async ({ page }) => {
+    test("reviews are labelled as demo content", async ({ page }) => {
       await page.goto(url("/"));
       await expect(page.getByRole("region", { name: d.home.reviewsTitle })).toContainText(reviews.notice[locale]);
     });
 
-    test("輸出該語系的 CafeOrCoffeeShop JSON-LD", async ({ page }) => {
+    test("outputs localized CafeOrCoffeeShop JSON-LD", async ({ page }) => {
       await page.goto(url("/"));
       const raw = await page.locator('script[type="application/ld+json"]').textContent();
       expect(JSON.parse(raw ?? "{}")).toMatchObject({
@@ -38,7 +38,7 @@ eachLocale((locale) => {
       });
     });
 
-    test("主選單可以前往菜單頁", async ({ page }) => {
+    test("main menu navigates to the menu page", async ({ page }) => {
       await page.goto(url("/"));
       await page.getByRole("navigation", { name: d.nav.label }).getByRole("link", { name: d.nav.menu }).click();
       await expect(page).toHaveURL(new RegExp(`${url("/menu/").replace(/\//g, "\\/")}$`));
@@ -46,8 +46,8 @@ eachLocale((locale) => {
     });
   });
 
-  test.describe(`[${locale}] 菜單頁`, () => {
-    test("列出所有分類與品項(該語系)", async ({ page }) => {
+  test.describe(`[${locale}] menu page`, () => {
+    test("lists every category and item (localized)", async ({ page }) => {
       await page.goto(url("/menu/"));
       for (const cat of menu.categories) {
         await expect(page.getByRole("heading", { level: 2, name: new RegExp(cat.name[locale]) })).toBeVisible();
@@ -57,7 +57,7 @@ eachLocale((locale) => {
   });
 
   test.describe(`[${locale}] SEO`, () => {
-    test("各公開頁有唯一 title、canonical 與兩語系 hreflang", async ({ page }) => {
+    test("each public page has a unique title, canonical and hreflang for both languages", async ({ page }) => {
       const titles = new Set<string>();
       for (const path of publicPaths) {
         await page.goto(url(path));
@@ -79,12 +79,12 @@ eachLocale((locale) => {
       expect(titles.size).toBe(publicPaths.length);
     });
 
-    test("訂位完成頁設定 noindex", async ({ page }) => {
+    test("booking confirmation page is noindex", async ({ page }) => {
       await page.goto(url("/reserve/done/"));
       await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
     });
 
-    test("語言切換器切到同一頁的另一語系", async ({ page }) => {
+    test("language switcher goes to the same page in the other language", async ({ page }) => {
       await page.goto(url("/menu/"));
       await page.getByRole("link", { name: d.langSwitch.aria }).click();
       const other = locale === "en" ? "zh-tw" : "en";
@@ -95,13 +95,13 @@ eachLocale((locale) => {
   });
 });
 
-test.describe("SEO 與路由(與語系無關)", () => {
-  test("英文為預設語系:根路徑是英文", async ({ page }) => {
+test.describe("SEO and routing (locale-independent)", () => {
+  test("English is the default: the root path is English", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator("html")).toHaveAttribute("lang", "en");
   });
 
-  test("後台設定 noindex,且沒有語言切換器", async ({ page }) => {
+  test("staff area is noindex and has no language switcher", async ({ page }) => {
     for (const path of ["/admin/", "/admin/login/"]) {
       await page.goto(path);
       await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
@@ -109,7 +109,7 @@ test.describe("SEO 與路由(與語系無關)", () => {
     }
   });
 
-  test("robots.txt 禁止 /admin/,sitemap.xml 含兩語系", async ({ request }) => {
+  test("robots.txt disallows /admin/ and sitemap.xml lists both languages", async ({ request }) => {
     const robots = await request.get("/robots.txt");
     expect(await robots.text()).toContain("Disallow: /admin/");
     const sitemap = await (await request.get("/sitemap.xml")).text();
@@ -118,7 +118,7 @@ test.describe("SEO 與路由(與語系無關)", () => {
     expect(sitemap).toMatch(/hreflang="zh-Hant-TW"/);
   });
 
-  test("不存在的網址回 404,顯示雙語頁面", async ({ page }) => {
+  test("unknown URLs return 404 with a bilingual page", async ({ page }) => {
     for (const path of ["/no-such-page/", "/zh-tw/no-such-page/"]) {
       const res = await page.goto(path);
       expect(res?.status()).toBe(404);

@@ -17,13 +17,13 @@ function directive(policy: string, name: string): string[] | undefined {
   return part?.split(/\s+/).slice(1);
 }
 
-test.describe("安全標頭", () => {
+test.describe("security headers", () => {
   test.beforeEach(({}, testInfo) => {
-    test.skip(testInfo.project.name !== "desktop", "HTTP 標頭與裝置無關,只跑一次");
+    test.skip(testInfo.project.name !== "desktop", "HTTP headers are device-independent; run once");
   });
 
   for (const path of pages) {
-    test(`${path}:回應帶安全標頭`, async ({ request }) => {
+    test(`${path}: response has security headers`, async ({ request }) => {
       const res = await request.get(path);
       const h = res.headers();
       expect(h["x-content-type-options"]).toBe("nosniff");
@@ -38,7 +38,7 @@ test.describe("安全標頭", () => {
     });
   }
 
-  test("後台頁面不快取、不被索引", async ({ request }) => {
+  test("staff pages are not cached or indexed", async ({ request }) => {
     for (const path of ["/admin/", "/admin/login/"]) {
       const h = (await request.get(path)).headers();
       expect(h["cache-control"], path).toBe("no-store");
@@ -46,7 +46,7 @@ test.describe("安全標頭", () => {
     }
   });
 
-  test("API 回應不快取、不允許 MIME sniffing", async ({ request }) => {
+  test("API responses are not cached and disallow MIME sniffing", async ({ request }) => {
     const res = await request.get("/api/slots?date=2099-01-01");
     const h = res.headers();
     expect(h["cache-control"]).toBe("no-store");
@@ -54,9 +54,9 @@ test.describe("安全標頭", () => {
   });
 });
 
-test.describe("CSP(script 只允許自己的檔案與逐頁 hash)", () => {
+test.describe("CSP (scripts only from this site plus per-page hashes)", () => {
   for (const path of pages) {
-    test(`${path}:有 CSP meta,script-src 不含 unsafe-inline / unsafe-eval`, async ({ page }) => {
+    test(`${path}: has a CSP meta tag; script-src has no unsafe-inline / unsafe-eval`, async ({ page }) => {
       await page.goto(path);
       const policy = await page
         .locator('meta[http-equiv="Content-Security-Policy"]')
@@ -71,7 +71,7 @@ test.describe("CSP(script 只允許自己的檔案與逐頁 hash)", () => {
     });
   }
 
-  test("注入的 inline script 不會執行,並回報 CSP 違規", async ({ page, cspViolations }) => {
+  test("an injected inline script does not run and is reported as a CSP violation", async ({ page, cspViolations }) => {
     await page.goto("/");
     const executed = await page.evaluate(() => {
       const s = document.createElement("script");
@@ -84,7 +84,7 @@ test.describe("CSP(script 只允許自己的檔案與逐頁 hash)", () => {
     cspViolations.length = 0;
   });
 
-  test("外部網域的 script 被擋", async ({ page, cspViolations }) => {
+  test("scripts from other domains are blocked", async ({ page, cspViolations }) => {
     await page.goto("/");
     await page.evaluate(() => {
       const s = document.createElement("script");

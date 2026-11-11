@@ -101,10 +101,10 @@ jobs:
         run: |
           missing=0
           for name in NEXT_PUBLIC_SITE_URL NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY NEXT_PUBLIC_TURNSTILE_SITE_KEY CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID; do
-            if [ -z "${!name}" ]; then echo "::error::缺少 $name"; missing=1; fi
+            if [ -z "${!name}" ]; then echo "::error::missing $name"; missing=1; fi
           done
-          case "$NEXT_PUBLIC_SITE_URL" in https://*) ;; *) echo "::error::NEXT_PUBLIC_SITE_URL 必須是 https://"; missing=1 ;; esac
-          case "$NEXT_PUBLIC_SUPABASE_URL" in https://*.supabase.co) ;; *) echo "::error::NEXT_PUBLIC_SUPABASE_URL 必須是 https://<ref>.supabase.co"; missing=1 ;; esac
+          case "$NEXT_PUBLIC_SITE_URL" in https://*) ;; *) echo "::error::NEXT_PUBLIC_SITE_URL must start with https://"; missing=1 ;; esac
+          case "$NEXT_PUBLIC_SUPABASE_URL" in https://*.supabase.co) ;; *) echo "::error::NEXT_PUBLIC_SUPABASE_URL must be https://<ref>.supabase.co"; missing=1 ;; esac
           exit $missing
 
       - name: Build (production)

@@ -17,12 +17,12 @@ function keyPaths(obj: unknown, prefix = ""): string[] {
   return Object.entries(obj).flatMap(([k, v]) => keyPaths(v, prefix ? `${prefix}.${k}` : k));
 }
 
-describe("i18n 字典", () => {
-  it("en 與 zh-tw 的 key 完全一致", () => {
+describe("i18n dictionaries", () => {
+  it("en and zh-tw have exactly the same keys", () => {
     expect(keyPaths(zhTw).sort()).toEqual(keyPaths(en).sort());
   });
 
-  it("所有字串都不是空的", () => {
+  it("no string is empty", () => {
     for (const dict of [en, zhTw]) {
       for (const path of keyPaths(dict)) {
         const value = path.split(".").reduce<unknown>((o, k) => (o as Record<string, unknown>)[k], dict);
@@ -31,7 +31,7 @@ describe("i18n 字典", () => {
     }
   });
 
-  it("每個表單錯誤代碼都有兩語系翻譯", () => {
+  it("every form error code is translated in both locales", () => {
     for (const code of errorCodes) {
       expect(filled((en.form.errors as Record<string, string>)[code]), `en ${code}`).toBe(true);
       expect(filled((zhTw.form.errors as Record<string, string>)[code]), `zh-tw ${code}`).toBe(true);
@@ -42,22 +42,22 @@ describe("i18n 字典", () => {
 describe("menu.json", () => {
   const categoryIds = new Set(menu.categories.map((c) => c.id));
 
-  it("品項數量在規格範圍內(15–20)", () => {
+  it("has 15–20 menu items as specified", () => {
     expect(menu.items.length).toBeGreaterThanOrEqual(15);
     expect(menu.items.length).toBeLessThanOrEqual(20);
   });
 
-  it("品項 id 不重複", () => {
+  it("menu item ids are unique", () => {
     const ids = menu.items.map((item) => item.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it("每個品項的分類都存在,且每個分類至少有一項", () => {
+  it("every item's category exists and every category has an item", () => {
     for (const item of menu.items) expect(categoryIds).toContain(item.category);
     for (const id of categoryIds) expect(menu.items.some((item) => item.category === id)).toBe(true);
   });
 
-  it("分類、品項名稱與說明兩語系都有", () => {
+  it("categories, names and descriptions exist in both locales", () => {
     for (const c of menu.categories) expectLocalized(c.name, `category ${c.id}`);
     for (const item of menu.items) {
       expectLocalized(item.name, `${item.id}.name`);
@@ -65,7 +65,7 @@ describe("menu.json", () => {
     }
   });
 
-  it("標籤在兩語系都有名稱", () => {
+  it("tags have names in both locales", () => {
     for (const item of menu.items) {
       for (const tag of item.tags) {
         for (const l of locales) expect(filled((menu.tagLabels[l] as Record<string, string>)[tag]), `${tag} [${l}]`).toBe(true);
@@ -73,20 +73,20 @@ describe("menu.json", () => {
     }
   });
 
-  it("價格為正整數", () => {
+  it("prices are positive integers", () => {
     for (const item of menu.items) expect(Number.isInteger(item.price) && item.price > 0).toBe(true);
   });
 });
 
 describe("site.json", () => {
-  it("示範專案聲明兩語系都有,且明確標示虛構", () => {
+  it("demo notice exists in both locales and says the business is fictional", () => {
     expect(site.demoNotice.en).toMatch(/demo project/i);
     expect(site.demoNotice.en).toMatch(/fictional/i);
     expect(site.demoNotice["zh-tw"]).toContain("Demo project");
     expect(site.demoNotice["zh-tw"]).toContain("虛構");
   });
 
-  it("文字欄位兩語系都有", () => {
+  it("text fields exist in both locales", () => {
     for (const key of ["tagline", "intro", "description"] as const) expectLocalized(site[key], key);
     for (const key of ["street", "district", "city"] as const) expectLocalized(site.address[key], `address.${key}`);
     expectLocalized(site.map.embedTitle, "map.embedTitle");
@@ -94,13 +94,13 @@ describe("site.json", () => {
     for (const h of site.hours) expectLocalized(h.label, "hours.label");
   });
 
-  it("地址與電話明確為虛構格式", () => {
+  it("address and phone are clearly fictional", () => {
     expect(site.address.street.en).toMatch(/fictional/i);
     expect(site.address.street["zh-tw"]).toContain("虛構");
     expect(site.phone).toBe("02-0000-0000");
   });
 
-  it("營業時間為 HH:MM、開店早於打烊,且涵蓋一週七天不重複", () => {
+  it("hours are HH:MM, open before close, and cover all seven days once", () => {
     const hhmm = /^([01]\d|2[0-3]):[0-5]\d$/;
     for (const h of site.hours) {
       expect(h.open).toMatch(hhmm);
@@ -114,7 +114,7 @@ describe("site.json", () => {
 });
 
 describe("reviews.json", () => {
-  it("整體與每則評論兩語系都標示為示範內容", () => {
+  it("the reviews section and every review are labeled as demo content in both locales", () => {
     expect(reviews.notice.en).toMatch(/demo/i);
     expect(reviews.notice["zh-tw"]).toContain("示範");
     for (const r of reviews.items) {
@@ -125,7 +125,7 @@ describe("reviews.json", () => {
     }
   });
 
-  it("評分介於 1–5", () => {
+  it("ratings are between 1 and 5", () => {
     for (const r of reviews.items) {
       expect(r.rating).toBeGreaterThanOrEqual(1);
       expect(r.rating).toBeLessThanOrEqual(5);

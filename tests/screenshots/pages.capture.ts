@@ -9,19 +9,19 @@ async function shot(page: Page, name: string, fullPage = false) {
   await page.screenshot({ path: out(page, name), fullPage, animations: "disabled" });
 }
 
-test("首頁(英文、繁中)", async ({ page }) => {
+test("home (English, Traditional Chinese)", async ({ page }) => {
   await page.goto("/");
   await shot(page, "home", true);
   await page.goto("/zh-tw/");
   await shot(page, "home-zh-tw", true);
 });
 
-test("菜單", async ({ page }) => {
+test("menu", async ({ page }) => {
   await page.goto("/menu/");
   await shot(page, "menu");
 });
 
-test("訂位表單(已選日期,顯示剩餘名額)", async ({ page }) => {
+test("reservation form (date picked, seats left shown)", async ({ page }) => {
   await page.goto("/reserve/");
   await page.locator('input[name="date"]').fill(dateFor(3));
   await expect(page.locator('input[name="slotId"]').first()).toBeVisible();
@@ -31,8 +31,8 @@ test("訂位表單(已選日期,顯示剩餘名額)", async ({ page }) => {
   await shot(page, "reserve", true);
 });
 
-test("後台:訂位清單", async ({ page }) => {
-  test.skip(test.info().project.name !== "desktop", "後台以桌機為主");
+test("staff dashboard: reservations", async ({ page }) => {
+  test.skip(test.info().project.name !== "desktop", "staff dashboard is desktop-first");
   await page.goto("/admin/login/");
   await shot(page, "admin-login");
   await page.getByLabel("Email").fill(STAFF_EMAIL);

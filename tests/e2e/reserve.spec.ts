@@ -24,7 +24,7 @@ async function fillForm(
   labels: ReturnType<typeof getDictionary>["form"]["labels"],
   { email, date, slot }: { email: string; date: string; slot: RegExp },
 ) {
-  await page.getByLabel(labels.name).fill("E2E 測試");
+  await page.getByLabel(labels.name).fill("E2E Guest");
   await page.getByLabel(labels.email).fill(email);
   await page.getByLabel(labels.date).fill(date);
   await page.getByRole("radio", { name: slot }).first().check();
@@ -39,8 +39,8 @@ eachLocale((locale) => {
   const url = (path: string) => localePath(locale, path);
   const submit = (page: Page) => page.getByRole("button", { name: f.submit });
 
-  test.describe(`[${locale}] 訂位表單`, () => {
-    test("成功訂位:前往該語系完成頁,資料庫新增一筆 pending 訂位", async ({ page }, testInfo) => {
+  test.describe(`[${locale}] reservation form`, () => {
+    test("successful booking: goes to the localized confirmation page and adds a pending row", async ({ page }, testInfo) => {
       const lane = laneFor(testInfo.project.name, locale);
       const email = emailFor(`ok-${locale}`, testInfo.project.name);
       await page.goto(url("/reserve/"));
@@ -57,7 +57,7 @@ eachLocale((locale) => {
       );
     });
 
-    test("欄位錯誤:顯示該語系訊息、聚焦第一個錯誤欄位,不送出", async ({ page }) => {
+    test("field errors: localized messages, focus on the first invalid field, nothing sent", async ({ page }) => {
       let posted = false;
       page.on("request", (req) => {
         if (req.url().includes("/api/reserve")) posted = true;
@@ -74,13 +74,13 @@ eachLocale((locale) => {
       expect(posted).toBe(false);
     });
 
-    test("已額滿的時段不可選", async ({ page }, testInfo) => {
+    test("full slots cannot be selected", async ({ page }, testInfo) => {
       await page.goto(url("/reserve/"));
       await page.getByLabel(f.labels.date).fill(laneDate(laneFor(testInfo.project.name, locale)));
       await expect(page.getByRole("radio", { name: new RegExp(`^${interpolateForTest(f.slotFull, "06:30")}`) })).toBeDisabled();
     });
 
-    test("額滿:選好時段後被別人訂走,送出時顯示訊息並更新名額", async ({ page }, testInfo) => {
+    test("slot taken after selection: submit shows a message and refreshes seats left", async ({ page }, testInfo) => {
       const project = testInfo.project.name;
       const lane = laneFor(project, locale);
       const date = laneDate(lane);
@@ -102,7 +102,7 @@ eachLocale((locale) => {
       await expect(page).toHaveURL(new RegExp(`${url("/reserve/")}$`));
     });
 
-    test("Turnstile 伺服器驗證失敗:顯示該語系訊息,不寫入資料庫", async ({ page }, testInfo) => {
+    test("Turnstile server check fails: localized message, nothing written", async ({ page }, testInfo) => {
       const email = emailFor(`turnstile-${locale}`, testInfo.project.name);
       await page.goto(`http://localhost:${TURNSTILE_FAIL_PORT}${url("/reserve/")}`);
       await fillForm(page, f.labels, {
@@ -119,20 +119,20 @@ eachLocale((locale) => {
   });
 });
 
-test.describe("訂位 API", () => {
+test.describe("reservation API", () => {
   test.beforeEach(({}, testInfo) => {
-    test.skip(testInfo.project.name !== "desktop", "API 測試與裝置無關,只跑一次");
+    test.skip(testInfo.project.name !== "desktop", "API tests are device-independent; run once");
   });
 
   const validBody = (date: string) => ({
-    name: "API 測試",
+    name: "API Test",
     email: `api@${E2E_EMAIL_DOMAIN}`,
     partySize: 1,
     date,
     slotId: 1,
   });
 
-  test("沒有 Turnstile token 回 400,不寫入資料庫", async ({ request }) => {
+  test("missing Turnstile token returns 400 and writes nothing", async ({ request }) => {
     const res = await request.post("/api/reserve", { data: validBody(laneDate("desktop-en")) });
     expect(res.status()).toBe(400);
     const body = await res.json();
@@ -140,19 +140,19 @@ test.describe("訂位 API", () => {
     expect(Object.keys(body.fields)).toContain("turnstileToken");
   });
 
-  test("偽造的 Turnstile token 被伺服器拒絕(403)", async ({ request }) => {
+  test("forged Turnstile token is rejected by the server (403)", async ({ request }) => {
     const res = await request.post(`http://localhost:${TURNSTILE_FAIL_PORT}/api/reserve`, {
       data: { ...validBody(laneDate("desktop-en")), turnstileToken: "forged-token" },
     });
     expect(res.status()).toBe(403);
   });
 
-  test("非 JSON 請求回 415", async ({ request }) => {
+  test("non-JSON request returns 415", async ({ request }) => {
     const res = await request.post("/api/reserve", { headers: { "Content-Type": "text/plain" }, data: "hello" });
     expect(res.status()).toBe(415);
   });
 
-  test("/api/slots 回傳時段;日期錯誤回 400", async ({ request }) => {
+  test("/api/slots returns slots; an invalid date returns 400", async ({ request }) => {
     const ok = await request.get(`/api/slots?date=${laneDate("desktop-en")}`);
     expect(ok.status()).toBe(200);
     expect(ok.headers()["cache-control"]).toBe("no-store");
@@ -164,7 +164,7 @@ test.describe("訂位 API", () => {
     expect((await request.get("/api/slots")).status()).toBe(400);
   });
 
-  test("並發:同時 10 筆訂位搶容量 4 的時段,只有 4 筆成功(不超賣)", async () => {
+  test("concurrency: 10 simultaneous bookings for a 4-seat slot, only 4 succeed (no overbooking)", async () => {
     const { url, serviceKey } = localSupabase();
     const date = dateFor(concurrencyDay);
     const attempts = Array.from({ length: 10 }, (_, i) =>
@@ -174,7 +174,7 @@ test.describe("訂位 API", () => {
         body: JSON.stringify({
           p_slot_id: concurrencySlotId,
           p_date: date,
-          p_name: `並發 ${i}`,
+          p_name: `Concurrent ${i}`,
           p_email: `concurrent-${i}@${E2E_EMAIL_DOMAIN}`,
           p_party_size: 1,
         }),

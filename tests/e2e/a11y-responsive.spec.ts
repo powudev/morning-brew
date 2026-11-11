@@ -7,7 +7,7 @@ const pages = [...locales.flatMap((l) => paths.map((p) => localePath(l, p))), "/
 
 for (const path of pages) {
   test.describe(`${path}`, () => {
-    test("axe:沒有 WCAG 2.1 A/AA 違規", async ({ page }) => {
+    test("axe: no WCAG 2.1 A/AA violations", async ({ page }) => {
       await page.goto(path);
       const results = await new AxeBuilder({ page })
         .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
@@ -15,7 +15,7 @@ for (const path of pages) {
       expect(results.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target).join(", ")}`)).toEqual([]);
     });
 
-    test("沒有橫向捲動", async ({ page }) => {
+    test("no horizontal scrolling", async ({ page }) => {
       await page.goto(path);
       const overflow = await page.evaluate(
         () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
@@ -23,7 +23,7 @@ for (const path of pages) {
       expect(overflow).toBeLessThanOrEqual(0);
     });
 
-    test("按鈕與導覽連結的觸控目標至少 44px", async ({ page }) => {
+    test("buttons and nav links have touch targets of at least 44px", async ({ page }) => {
       await page.goto(path);
       const targets = page.locator("header a, footer a, main button, main a[data-cta]");
       const count = await targets.count();
@@ -39,8 +39,8 @@ for (const path of pages) {
 
 for (const locale of locales) {
   const d = getDictionary(locale);
-  test.describe(`[${locale}] 鍵盤操作`, () => {
-    test("第一個 Tab 停在「跳到主要內容」,按下後焦點移到 main", async ({ page }) => {
+  test.describe(`[${locale}] keyboard`, () => {
+    test("first Tab lands on \"Skip to main content\" and Enter moves focus to main", async ({ page }) => {
       await page.goto(localePath(locale, "/menu/"));
       await page.keyboard.press("Tab");
       const skip = page.getByRole("link", { name: d.skipLink });
@@ -51,7 +51,7 @@ for (const locale of locales) {
       await expect(page.locator("main")).toBeFocused();
     });
 
-    test("目前頁面在主選單標示 aria-current", async ({ page }) => {
+    test("current page is marked with aria-current in the main menu", async ({ page }) => {
       await page.goto(localePath(locale, "/menu/"));
       await expect(
         page.getByRole("navigation", { name: d.nav.label }).getByRole("link", { name: d.nav.menu }),

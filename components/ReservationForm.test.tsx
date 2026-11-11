@@ -11,7 +11,7 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 vi.mock("@/components/Turnstile", () => ({
   default: ({ onToken }: { onToken: (t: string | null) => void }) => (
     <button type="button" onClick={() => onToken("test-token")}>
-      完成驗證(mock)
+      Complete verification (mock)
     </button>
   ),
 }));
@@ -52,7 +52,7 @@ function setup(locale: Locale) {
   const d = getDictionary(locale);
   const f = d.form;
   const label = f.labels;
-  // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp -- 測試內固定字串,非使用者輸入
+  // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp -- fixed test strings, not user input
   const slotName = (time: string) => new RegExp(`^${time}`);
 
   async function pickDate() {
@@ -61,11 +61,11 @@ function setup(locale: Locale) {
   }
 
   async function fillValid(user: ReturnType<typeof userEvent.setup>) {
-    await user.type(screen.getByLabelText(label.name), "王小明");
+    await user.type(screen.getByLabelText(label.name), "Alex Chen");
     await user.type(screen.getByLabelText(label.email), "demo@example.com");
     await pickDate();
     await user.click(screen.getByRole("radio", { name: slotName("08:00") }));
-    await user.click(screen.getByRole("button", { name: "完成驗證(mock)" }));
+    await user.click(screen.getByRole("button", { name: "Complete verification (mock)" }));
   }
 
   const submit = () => screen.getByRole("button", { name: f.submit });
@@ -77,7 +77,7 @@ const reserveCalls = () => fetchMock.mock.calls.filter(([url]) => String(url) ==
 describe.each(locales)("ReservationForm(%s)", (locale) => {
   const { f, label, slotName, pickDate, fillValid, submit } = setup(locale);
 
-  it("每個欄位都有該語系的標籤,日期限制在可訂範圍內", () => {
+  it("every field has a localized label and the date is limited to the bookable range", () => {
     render(<ReservationForm locale={locale} />);
     for (const text of Object.values(label).filter((l) => l !== label.slots)) {
       expect(screen.getByLabelText(text)).toBeInTheDocument();
@@ -87,13 +87,13 @@ describe.each(locales)("ReservationForm(%s)", (locale) => {
     expect(dateInput).toHaveAttribute("max", addDays(todayInTaipei(), 30));
   });
 
-  it("未選日期前不顯示時段,並提示先選日期", () => {
+  it("hides time slots until a date is picked and asks for a date first", () => {
     render(<ReservationForm locale={locale} />);
     expect(screen.queryAllByRole("radio")).toHaveLength(0);
     expect(screen.getByText(f.pickDateFirst)).toBeInTheDocument();
   });
 
-  it("空白送出顯示該語系的欄位錯誤、標示 aria-invalid,且不送出請求", async () => {
+  it("empty submit shows localized field errors, sets aria-invalid and sends no request", async () => {
     const user = userEvent.setup();
     render(<ReservationForm locale={locale} />);
     await user.click(submit());
@@ -104,7 +104,7 @@ describe.each(locales)("ReservationForm(%s)", (locale) => {
     expect(reserveCalls()).toHaveLength(0);
   });
 
-  it("選日期後載入時段,額滿的時段不可選", async () => {
+  it("loads slots after picking a date; full slots are disabled", async () => {
     render(<ReservationForm locale={locale} />);
     await pickDate();
     expect(fetchMock).toHaveBeenCalledWith(`/api/slots?date=${date}`, expect.anything());
@@ -112,7 +112,7 @@ describe.each(locales)("ReservationForm(%s)", (locale) => {
     expect(screen.getByRole("radio", { name: interpolate(f.slotFull, { time: "12:00" }) })).toBeDisabled();
   });
 
-  it("人數超過剩餘名額的時段不可選", async () => {
+  it("slots with fewer seats than the party size are disabled", async () => {
     const user = userEvent.setup();
     render(<ReservationForm locale={locale} />);
     await pickDate();
@@ -121,28 +121,28 @@ describe.each(locales)("ReservationForm(%s)", (locale) => {
     expect(screen.getByRole("radio", { name: interpolate(f.slotNotEnough, { time: "10:00", n: 2 }) })).toBeDisabled();
   });
 
-  it("送出成功後送出正確資料並前往該語系的完成頁", async () => {
+  it("on success sends the right payload and goes to the localized confirmation page", async () => {
     const user = userEvent.setup();
     render(<ReservationForm locale={locale} />);
     await fillValid(user);
-    await user.type(screen.getByLabelText(label.note), "靠窗");
+    await user.type(screen.getByLabelText(label.note), "Window seat");
     await user.click(submit());
     await waitFor(() => expect(push).toHaveBeenCalledWith(localePath(locale, "/reserve/done/")));
     const [, init] = reserveCalls()[0];
     expect(new Headers(init!.headers).get("Content-Type")).toBe("application/json");
     expect(JSON.parse(init!.body as string)).toEqual({
-      name: "王小明",
+      name: "Alex Chen",
       email: "demo@example.com",
       phone: "",
       partySize: 2,
       date,
       slotId: 11,
-      note: "靠窗",
+      note: "Window seat",
       turnstileToken: "test-token",
     });
   });
 
-  it("時段剛額滿(409)時顯示訊息並重新載入時段", async () => {
+  it("when the slot just filled up (409) shows a message and reloads slots", async () => {
     const user = userEvent.setup();
     reserveReply = { status: 409, body: { error: "SLOT_FULL" } };
     render(<ReservationForm locale={locale} />);
@@ -155,7 +155,7 @@ describe.each(locales)("ReservationForm(%s)", (locale) => {
     expect(push).not.toHaveBeenCalled();
   });
 
-  it("Turnstile 驗證失敗(403)時要求重新驗證", async () => {
+  it("when Turnstile fails (403) asks to verify again", async () => {
     const user = userEvent.setup();
     reserveReply = { status: 403, body: { error: "TURNSTILE_FAILED" } };
     render(<ReservationForm locale={locale} />);
@@ -167,7 +167,7 @@ describe.each(locales)("ReservationForm(%s)", (locale) => {
     expect(reserveCalls()).toHaveLength(1);
   });
 
-  it("伺服器回傳欄位錯誤代碼(400)時以該語系顯示在對應欄位", async () => {
+  it("server field error codes (400) are shown, localized, on the matching fields", async () => {
     const user = userEvent.setup();
     reserveReply = { status: 400, body: { error: "VALIDATION", fields: { email: "email_invalid" } } };
     render(<ReservationForm locale={locale} />);
@@ -177,7 +177,7 @@ describe.each(locales)("ReservationForm(%s)", (locale) => {
     expect(screen.getByText(f.errors.email_invalid)).toBeInTheDocument();
   });
 
-  it("其他錯誤顯示通用訊息,不顯示技術細節", async () => {
+  it("other errors show a generic message without technical details", async () => {
     const user = userEvent.setup();
     reserveReply = { status: 500, body: { error: "INTERNAL" } };
     render(<ReservationForm locale={locale} />);

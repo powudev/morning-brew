@@ -54,28 +54,28 @@ beforeAll(async () => {
 
 afterAll(() => cleanup());
 
-describe("未登入(anon)", () => {
-  it("沒有 session", async () => {
+describe("signed out (anon)", () => {
+  it("has no session", async () => {
     expect(await newApi().getSession()).toBeNull();
   });
 
-  it("不是 staff", async () => {
+  it("is not staff", async () => {
     expect(await newApi().isStaff()).toBe(false);
   });
 
-  it("讀取訂位被拒(forbidden)", async () => {
+  it("reading reservations is refused (forbidden)", async () => {
     await expect(newApi().listReservations(DATE)).rejects.toMatchObject({ code: "forbidden" });
   });
 });
 
-describe("登入", () => {
-  it("密碼錯誤回 invalid_credentials", async () => {
+describe("sign in", () => {
+  it("wrong password returns invalid_credentials", async () => {
     expect(await newApi().signIn(`staff@${DOMAIN}`, "wrong-password")).toEqual({ ok: false, error: "invalid_credentials" });
   });
 });
 
-describe("已登入但不是 staff", () => {
-  it("isStaff 為 false、看不到任何訂位、改狀態被拒且資料不變", async () => {
+describe("signed in, not staff", () => {
+  it("isStaff is false, sees no reservations, and status updates are refused with data unchanged", async () => {
     const api = newApi();
     expect(await api.signIn(`customer@${DOMAIN}`, password)).toEqual({ ok: true });
     expect(await api.getSession()).toMatchObject({ email: `customer@${DOMAIN}` });
@@ -89,7 +89,7 @@ describe("已登入但不是 staff", () => {
 });
 
 describe("staff", () => {
-  it("isStaff 為 true,讀到當天所有訂位(含時段時間、已排序)", async () => {
+  it("isStaff is true and reads all reservations for the day (with slot time, sorted)", async () => {
     const api = newApi();
     expect(await api.signIn(`staff@${DOMAIN}`, password)).toEqual({ ok: true });
     expect(await api.isStaff()).toBe(true);
@@ -102,13 +102,13 @@ describe("staff", () => {
     expect(list[0]).toMatchObject({ phone: "0900-000-000", partySize: 3, note: "window", date: DATE });
   });
 
-  it("只看得到指定日期", async () => {
+  it("sees only the requested date", async () => {
     const api = newApi();
     await api.signIn(`staff@${DOMAIN}`, password);
     expect(await api.listReservations("2099-03-04")).toEqual([]);
   });
 
-  it("可以改狀態並寫入資料庫", async () => {
+  it("can change status and it is saved to the database", async () => {
     const api = newApi();
     await api.signIn(`staff@${DOMAIN}`, password);
     await api.updateStatus(ids[`b@${DOMAIN}`], "confirmed");
@@ -117,7 +117,7 @@ describe("staff", () => {
     expect(list.find((x) => x.email === `b@${DOMAIN}`)?.status).toBe("confirmed");
   });
 
-  it("不存在的訂位 id 回 not_found", async () => {
+  it("unknown reservation id returns not_found", async () => {
     const api = newApi();
     await api.signIn(`staff@${DOMAIN}`, password);
     await expect(api.updateStatus("00000000-0000-0000-0000-000000000000", "confirmed")).rejects.toMatchObject({
@@ -125,7 +125,7 @@ describe("staff", () => {
     });
   });
 
-  it("登出後沒有 session,也讀不到訂位", async () => {
+  it("after sign-out there is no session and no reservations can be read", async () => {
     const api = newApi();
     await api.signIn(`staff@${DOMAIN}`, password);
     await api.signOut();

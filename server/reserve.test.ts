@@ -3,13 +3,13 @@ import { handleReserve } from "@/server/reserve";
 import { env, json, mockFetch, RPC_URL, TURNSTILE_URL } from "@/server/test-helpers";
 
 const body = {
-  name: "王小明",
+  name: "Demo Guest",
   email: "demo@example.com",
   phone: "0900-000-000",
   partySize: 2,
   date: "2026-11-10",
   slotId: 3,
-  note: "靠窗",
+  note: "window seat",
   turnstileToken: "tok",
 };
 
@@ -28,8 +28,8 @@ async function errorOf(res: Response) {
   return ((await res.json()) as { error: string }).error;
 }
 
-describe("handleReserve:成功", () => {
-  it("驗證 Turnstile 後呼叫 create_reservation,回 201", async () => {
+describe("handleReserve: success", () => {
+  it("verifies Turnstile, calls create_reservation and returns 201", async () => {
     const fetch = mockFetch({ [TURNSTILE_URL]: turnstileOk, [RPC_URL("create_reservation")]: rpcOk });
     const res = await handleReserve(post(), env, fetch);
     expect(res.status).toBe(201);
@@ -47,15 +47,15 @@ describe("handleReserve:成功", () => {
     expect(JSON.parse(rpcCall[1]!.body as string)).toEqual({
       p_slot_id: 3,
       p_date: "2026-11-10",
-      p_name: "王小明",
+      p_name: "Demo Guest",
       p_email: "demo@example.com",
       p_party_size: 2,
       p_phone: "0900-000-000",
-      p_note: "靠窗",
+      p_note: "window seat",
     });
   });
 
-  it("新版 sb_secret_ 金鑰只放 apikey,不放 Bearer;舊版 JWT 金鑰兩者都放", async () => {
+  it("sends new sb_secret_ keys only as apikey; legacy JWT keys also as Bearer", async () => {
     for (const [key, bearer] of [
       ["sb_secret_abc", null],
       ["eyJhbGciOiJIUzI1NiJ9.x.y", "Bearer eyJhbGciOiJIUzI1NiJ9.x.y"],
@@ -69,28 +69,28 @@ describe("handleReserve:成功", () => {
   });
 });
 
-describe("handleReserve:請求格式", () => {
-  it("非 JSON Content-Type 回 415", async () => {
+describe("handleReserve: request format", () => {
+  it("returns 415 for a non-JSON Content-Type", async () => {
     const fetch = mockFetch({});
     const res = await handleReserve(post(body, { "Content-Type": "text/plain" }), env, fetch);
     expect(res.status).toBe(415);
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  it("超過 8KB 回 413", async () => {
+  it("returns 413 for bodies over 8 KB", async () => {
     const fetch = mockFetch({});
     const res = await handleReserve(post({ ...body, note: "a".repeat(9000) }), env, fetch);
     expect(res.status).toBe(413);
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  it("壞掉的 JSON 回 400", async () => {
+  it("returns 400 for malformed JSON", async () => {
     const res = await handleReserve(post("{oops"), env, mockFetch({}));
     expect(res.status).toBe(400);
     expect(await errorOf(res)).toBe("INVALID_JSON");
   });
 
-  it("欄位錯誤回 400 與各欄位訊息,且不消耗 Turnstile token", async () => {
+  it("returns 400 with per-field errors without spending the Turnstile token", async () => {
     const fetch = mockFetch({});
     const res = await handleReserve(post({ ...body, email: "x", partySize: 0 }), env, fetch);
     expect(res.status).toBe(400);
@@ -102,7 +102,7 @@ describe("handleReserve:請求格式", () => {
 });
 
 describe("handleReserve:Turnstile", () => {
-  it("驗證失敗回 403,不寫入資料庫", async () => {
+  it("returns 403 when verification fails and writes nothing", async () => {
     const fetch = mockFetch({ [TURNSTILE_URL]: () => json({ success: false, "error-codes": ["invalid-input-response"] }) });
     const res = await handleReserve(post(), env, fetch);
     expect(res.status).toBe(403);
@@ -110,7 +110,7 @@ describe("handleReserve:Turnstile", () => {
     expect(fetch).toHaveBeenCalledTimes(1);
   });
 
-  it("Turnstile 服務連不上時拒絕(fail closed),回 503", async () => {
+  it("fails closed with 503 when Turnstile is unreachable", async () => {
     const fetch = mockFetch({
       [TURNSTILE_URL]: () => {
         throw new Error("network down");
@@ -122,7 +122,7 @@ describe("handleReserve:Turnstile", () => {
   });
 });
 
-describe("handleReserve:資料庫錯誤對應", () => {
+describe("handleReserve: database error mapping", () => {
   const cases: [string, number, string][] = [
     ["SLOT_FULL", 409, "SLOT_FULL"],
     ["SLOT_NOT_AVAILABLE", 422, "SLOT_NOT_AVAILABLE"],
@@ -141,7 +141,7 @@ describe("handleReserve:資料庫錯誤對應", () => {
     });
   }
 
-  it("其他資料庫錯誤回 500,且不洩漏內部訊息", async () => {
+  it("returns 500 for other database errors without leaking details", async () => {
     const fetch = mockFetch({
       [TURNSTILE_URL]: turnstileOk,
       [RPC_URL("create_reservation")]: () => json({ code: "42P01", message: 'relation "secret_table" does not exist' }, 404),
@@ -151,7 +151,7 @@ describe("handleReserve:資料庫錯誤對應", () => {
     expect(await res.text()).not.toContain("secret_table");
   });
 
-  it("資料庫連不上回 503", async () => {
+  it("returns 503 when the database is unreachable", async () => {
     const fetch = mockFetch({
       [TURNSTILE_URL]: turnstileOk,
       [RPC_URL("create_reservation")]: () => {
@@ -163,9 +163,9 @@ describe("handleReserve:資料庫錯誤對應", () => {
   });
 });
 
-describe("handleReserve:設定錯誤", () => {
+describe("handleReserve: misconfiguration", () => {
   for (const missing of ["NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "TURNSTILE_SECRET_KEY"] as const) {
-    it(`缺少 ${missing} 時拒絕,回 500,不呼叫任何外部服務`, async () => {
+    it(`returns 500 without calling external services when ${missing} is missing`, async () => {
       const fetch = mockFetch({});
       const res = await handleReserve(post(), { ...env, [missing]: "" }, fetch);
       expect(res.status).toBe(500);

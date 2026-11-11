@@ -44,7 +44,7 @@ function signedInStaff(list = sample) {
   api.isStaff.mockResolvedValue(true);
   api.listReservations.mockResolvedValue(list);
 }
-// nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp -- 測試內固定字串,非使用者輸入
+// nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp -- fixed test strings, not user input
 const row = (name: string) => screen.getByRole("listitem", { name: new RegExp(name) });
 
 beforeEach(() => {
@@ -53,15 +53,15 @@ beforeEach(() => {
   replace.mockClear();
 });
 
-describe("Dashboard:權限", () => {
-  it("未登入導回登入頁,不讀取訂位", async () => {
+describe("Dashboard: access", () => {
+  it("redirects to sign-in when signed out and loads no reservations", async () => {
     render(<Dashboard />);
     await waitFor(() => expect(replace).toHaveBeenCalledWith("/admin/login/"));
     expect(api.listReservations).not.toHaveBeenCalled();
     expect(screen.queryByRole("heading", { name: "Reservations" })).toBeNull();
   });
 
-  it("已登入但不是 staff:登出並導回登入頁", async () => {
+  it("signed in but not staff: signs out and redirects to sign-in", async () => {
     api.getSession.mockResolvedValue({ userId: "u", email: "x@example.com" });
     api.isStaff.mockResolvedValue(false);
     render(<Dashboard />);
@@ -70,7 +70,7 @@ describe("Dashboard:權限", () => {
     expect(api.listReservations).not.toHaveBeenCalled();
   });
 
-  it("讀取時 session 失效(forbidden)導回登入頁", async () => {
+  it("session expired while loading (forbidden) redirects to sign-in", async () => {
     signedInStaff();
     api.listReservations.mockRejectedValue(new AdminApiError("forbidden"));
     render(<Dashboard />);
@@ -78,8 +78,8 @@ describe("Dashboard:權限", () => {
   });
 });
 
-describe("Dashboard:清單", () => {
-  it("預設顯示今天的訂位,含時間、姓名、人數、聯絡方式、備註與狀態", async () => {
+describe("Dashboard: list", () => {
+  it("shows today's reservations by default with time, name, party size, contact, note and status", async () => {
     signedInStaff();
     render(<Dashboard />);
     expect(await screen.findByRole("heading", { level: 1, name: "Reservations" })).toBeInTheDocument();
@@ -93,13 +93,13 @@ describe("Dashboard:清單", () => {
     expect(a).toHaveTextContent("Confirmed");
   });
 
-  it("顯示統計:筆數與人數(不含已取消)", async () => {
+  it("shows totals: bookings and guests (excluding cancelled)", async () => {
     signedInStaff();
     render(<Dashboard />);
     expect(await screen.findByText("3 reservations · 5 guests")).toBeInTheDocument();
   });
 
-  it("換日期重新讀取", async () => {
+  it("reloads when the date changes", async () => {
     signedInStaff();
     render(<Dashboard />);
     await screen.findByRole("listitem", { name: /Early A/ });
@@ -107,7 +107,7 @@ describe("Dashboard:清單", () => {
     await waitFor(() => expect(api.listReservations).toHaveBeenLastCalledWith("2026-12-24"));
   });
 
-  it("狀態篩選只顯示該狀態", async () => {
+  it("status filter shows only that status", async () => {
     signedInStaff();
     const user = userEvent.setup();
     render(<Dashboard />);
@@ -117,15 +117,15 @@ describe("Dashboard:清單", () => {
     expect(row("Late B")).toBeInTheDocument();
   });
 
-  it("沒有訂位時顯示提示", async () => {
+  it("shows a message when there are no reservations", async () => {
     signedInStaff([]);
     render(<Dashboard />);
     expect(await screen.findByText("No reservations for this date.")).toBeInTheDocument();
   });
 });
 
-describe("Dashboard:改狀態", () => {
-  it("按 Confirm 呼叫 updateStatus 並更新畫面,目前狀態的按鈕不顯示", async () => {
+describe("Dashboard: status changes", () => {
+  it("Confirm calls updateStatus and updates the row; the current status has no button", async () => {
     signedInStaff();
     const user = userEvent.setup();
     render(<Dashboard />);
@@ -137,7 +137,7 @@ describe("Dashboard:改狀態", () => {
     expect(within(row("Late B")).queryByRole("button", { name: /^Confirm/ })).toBeNull();
   });
 
-  it("儲存失敗(網路)顯示訊息,狀態不變", async () => {
+  it("save failure (network) shows a message and keeps the status", async () => {
     signedInStaff();
     api.updateStatus.mockRejectedValue(new AdminApiError("network"));
     const user = userEvent.setup();
@@ -148,7 +148,7 @@ describe("Dashboard:改狀態", () => {
     expect(row("Late B")).toHaveTextContent("Pending");
   });
 
-  it("儲存時權限失效(forbidden)導回登入頁", async () => {
+  it("access lost while saving (forbidden) redirects to sign-in", async () => {
     signedInStaff();
     api.updateStatus.mockRejectedValue(new AdminApiError("forbidden"));
     const user = userEvent.setup();
@@ -159,8 +159,8 @@ describe("Dashboard:改狀態", () => {
   });
 });
 
-describe("Dashboard:登出", () => {
-  it("按 Sign out 登出並回到登入頁", async () => {
+describe("Dashboard: sign out", () => {
+  it("Sign out signs out and returns to sign-in", async () => {
     signedInStaff();
     const user = userEvent.setup();
     render(<Dashboard />);

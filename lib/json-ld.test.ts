@@ -3,13 +3,13 @@ import site from "@/content/site.json";
 import { cafeJsonLd, serializeJsonLd } from "@/lib/json-ld";
 
 describe("serializeJsonLd", () => {
-  it("跳脫 <,讓字串無法提前結束 <script> 標籤", () => {
+  it("escapes < so strings cannot close the <script> tag", () => {
     const out = serializeJsonLd({ name: "</script><script>alert(1)</script>" });
     expect(out).not.toContain("<");
     expect(out).toContain("\\u003c/script>");
   });
 
-  it("跳脫後仍是可還原的 JSON", () => {
+  it("escaped output is still valid, round-trippable JSON", () => {
     const data = { name: "a<b", n: 1 };
     expect(JSON.parse(serializeJsonLd(data))).toEqual(data);
   });
@@ -18,14 +18,14 @@ describe("serializeJsonLd", () => {
 describe("cafeJsonLd", () => {
   const ld = cafeJsonLd("en");
 
-  it("使用 schema.org 的 CafeOrCoffeeShop 型別", () => {
+  it("uses the schema.org CafeOrCoffeeShop type", () => {
     expect(ld["@context"]).toBe("https://schema.org");
     expect(ld["@type"]).toBe("CafeOrCoffeeShop");
     expect(ld.name).toBe(site.name);
     expect(ld.acceptsReservations).toBe(true);
   });
 
-  it("地址與電話來自 site.json", () => {
+  it("takes address and phone from site.json", () => {
     expect(ld.telephone).toBe(site.phone);
     expect(ld.address).toMatchObject({
       "@type": "PostalAddress",
@@ -34,7 +34,7 @@ describe("cafeJsonLd", () => {
     });
   });
 
-  it("營業時間把星期縮寫轉成 schema.org 完整名稱", () => {
+  it("maps weekday abbreviations to full schema.org names", () => {
     expect(ld.openingHoursSpecification).toHaveLength(site.hours.length);
     expect(ld.openingHoursSpecification[0]).toEqual({
       "@type": "OpeningHoursSpecification",
@@ -46,8 +46,8 @@ describe("cafeJsonLd", () => {
   });
 });
 
-describe("cafeJsonLd 語系", () => {
-  it("英文版用英文說明與網址,繁中版用中文說明與 /zh-tw/ 網址", () => {
+describe("cafeJsonLd locales", () => {
+  it("uses English text and URL for en, Chinese text and /zh-tw/ URL for zh-tw", () => {
     const en = cafeJsonLd("en");
     const zh = cafeJsonLd("zh-tw");
     expect(en.description).toBe(site.description.en);

@@ -1,11 +1,11 @@
-# 圖片與素材來源
+# Credits
 
-所有圖片需為可商用授權(或 AI 生成),逐一記錄於此。
+Every image and asset used in this project is listed here with its license.
 
-| 檔案 | 來源 / 作者 | 授權 | 網址 |
+| File | Source / author | License | URL |
 |---|---|---|---|
-| `components/Illustrations.tsx`(咖啡杯、咖啡豆、可頌、日曆) | 本專案原創 SVG | 本專案授權 | — |
+| `components/Illustrations.tsx` (coffee cup, beans, croissant, calendar) | Original SVGs made for this project | Project license | — |
 
-字型:Playfair Display、Inter、Noto Sans TC — SIL Open Font License,經 `next/font` 自託管。
+Fonts: Playfair Display, Inter and Noto Sans TC (SIL Open Font License), self-hosted via `next/font`.
 
-地圖:OpenStreetMap(© OpenStreetMap contributors,ODbL),使用者點擊後才載入 iframe。
+Map: OpenStreetMap (© OpenStreetMap contributors, ODbL). The map iframe loads only after the visitor clicks.

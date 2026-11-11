@@ -29,14 +29,14 @@ async function fillAndSubmit(user: ReturnType<typeof userEvent.setup>) {
 }
 
 describe("LoginForm", () => {
-  it("有 Email 與 Password 欄位,密碼欄為 password 類型", async () => {
+  it("has Email and Password fields; the password field is type=password", async () => {
     render(<LoginForm />);
     expect(screen.getByLabelText("Email")).toHaveAttribute("autocomplete", "username");
     expect(screen.getByLabelText("Password")).toHaveAttribute("type", "password");
     expect(screen.getByLabelText("Password")).toHaveAttribute("autocomplete", "current-password");
   });
 
-  it("空白送出不呼叫登入,並提示填寫", async () => {
+  it("empty submit does not sign in and asks for the fields", async () => {
     const user = userEvent.setup();
     render(<LoginForm />);
     await user.click(screen.getByRole("button", { name: "Sign in" }));
@@ -44,7 +44,7 @@ describe("LoginForm", () => {
     expect(api.signIn).not.toHaveBeenCalled();
   });
 
-  it("帳密錯誤顯示訊息,不導頁", async () => {
+  it("wrong credentials show a message and stay on the page", async () => {
     api.signIn.mockResolvedValue({ ok: false, error: "invalid_credentials" });
     const user = userEvent.setup();
     render(<LoginForm />);
@@ -53,7 +53,7 @@ describe("LoginForm", () => {
     expect(replace).not.toHaveBeenCalled();
   });
 
-  it("伺服器連不上時顯示訊息", async () => {
+  it("shows a message when the server is unreachable", async () => {
     api.signIn.mockResolvedValue({ ok: false, error: "network" });
     const user = userEvent.setup();
     render(<LoginForm />);
@@ -61,7 +61,7 @@ describe("LoginForm", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("Couldn't reach the server");
   });
 
-  it("登入成功但不是 staff:立即登出並拒絕", async () => {
+  it("signed in but not staff: signs out immediately and refuses", async () => {
     api.isStaff.mockResolvedValue(false);
     const user = userEvent.setup();
     render(<LoginForm />);
@@ -71,7 +71,7 @@ describe("LoginForm", () => {
     expect(replace).not.toHaveBeenCalled();
   });
 
-  it("staff 登入成功後前往 /admin/", async () => {
+  it("staff sign-in goes to /admin/", async () => {
     api.isStaff.mockResolvedValue(true);
     const user = userEvent.setup();
     render(<LoginForm />);
@@ -80,7 +80,7 @@ describe("LoginForm", () => {
     expect(api.signIn).toHaveBeenCalledWith("staff@example.com", "secret-pass");
   });
 
-  it("已經以 staff 登入時直接前往 /admin/", async () => {
+  it("already signed in as staff goes straight to /admin/", async () => {
     api.getSession.mockResolvedValue({ userId: "u", email: "staff@example.com" });
     api.isStaff.mockResolvedValue(true);
     render(<LoginForm />);

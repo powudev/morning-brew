@@ -6,7 +6,7 @@ const now = new Date("2026-11-06T02:00:00Z");
 const get = (query: string) => new Request(`https://brew.test/api/slots${query}`);
 
 describe("handleSlots", () => {
-  it("回傳該日時段與剩餘人數,時間格式為 HH:MM,且不快取", async () => {
+  it("returns the day's slots with remaining seats, HH:MM times and no caching", async () => {
     const fetch = mockFetch({
       [RPC_URL("get_availability")]: () =>
         json([
@@ -27,7 +27,7 @@ describe("handleSlots", () => {
     expect(JSON.parse(fetch.mock.calls[0][1]!.body as string)).toEqual({ p_date: "2026-11-10" });
   });
 
-  it("今天已經過去的時段標示為 0 名額", async () => {
+  it("marks slots already past today as 0 remaining", async () => {
     const fetch = mockFetch({
       [RPC_URL("get_availability")]: () =>
         json([
@@ -44,12 +44,12 @@ describe("handleSlots", () => {
   });
 
   for (const [label, query] of [
-    ["缺少 date", ""],
-    ["格式錯誤", "?date=2026/11/10"],
-    ["過去日期", "?date=2026-11-05"],
-    ["超過 30 天", "?date=2026-12-07"],
+    ["missing date", ""],
+    ["malformed date", "?date=2026/11/10"],
+    ["past date", "?date=2026-11-05"],
+    ["more than 30 days ahead", "?date=2026-12-07"],
   ]) {
-    it(`${label} 回 400,不查資料庫`, async () => {
+    it(`returns 400 for ${label} without querying the database`, async () => {
       const fetch = mockFetch({});
       const res = await handleSlots(get(query), env, fetch, now);
       expect(res.status).toBe(400);
@@ -57,7 +57,7 @@ describe("handleSlots", () => {
     });
   }
 
-  it("資料庫錯誤回 503,不洩漏內部訊息", async () => {
+  it("returns 503 on database errors without leaking details", async () => {
     const fetch = mockFetch({ [RPC_URL("get_availability")]: () => json({ message: "internal detail" }, 500) });
     const res = await handleSlots(get("?date=2026-11-10"), env, fetch, now);
     expect(res.status).toBe(503);

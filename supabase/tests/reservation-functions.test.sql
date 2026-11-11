@@ -20,78 +20,78 @@ insert into public.time_slots (id, weekday, start_time, capacity)
 set local role service_role;
 
 select isnt(
-  public.create_reservation(920001, (select d from fx), '測試 甲', 'a@test.local', 3::smallint, '0900-000-000', '靠窗'),
-  null, '可以建立訂位並回傳 id');
+  public.create_reservation(920001, (select d from fx), 'Test A', 'a@test.local', 3::smallint, '0900-000-000', 'window seat'),
+  null, 'creates a reservation and returns its id');
 select results_eq(
   $$select status::text, party_size::int, phone, note from public.reservations where email = 'a@test.local'$$,
-  $$values ('pending', 3, '0900-000-000', '靠窗')$$,
-  '新訂位狀態為 pending,欄位正確寫入');
-select public.create_reservation(920001, (select d from fx), '測試 乙', 'b@test.local', 1::smallint, '', '');
+  $$values ('pending', 3, '0900-000-000', 'window seat')$$,
+  'new reservation is pending with fields stored correctly');
+select public.create_reservation(920001, (select d from fx), 'Test B', 'b@test.local', 1::smallint, '', '');
 select results_eq(
   $$select phone, note from public.reservations where email = 'b@test.local'$$,
   $$values (null::text, null::text)$$,
-  '空字串的電話與備註存成 null');
+  'empty phone and note are stored as null');
 
 select throws_ok(
-  $$select public.create_reservation(920001, (select d from fx), '測試 丙', 'c@test.local', 1::smallint)$$,
-  'P0001', 'SLOT_FULL', '已滿(3+1=4)後再訂 1 人被拒');
+  $$select public.create_reservation(920001, (select d from fx), 'Test C', 'c@test.local', 1::smallint)$$,
+  'P0001', 'SLOT_FULL', 'rejects 1 more guest once full (3+1=4)');
 update public.reservations set status = 'cancelled' where email = 'b@test.local';
 select lives_ok(
-  $$select public.create_reservation(920001, (select d from fx), '測試 丁', 'd@test.local', 1::smallint)$$,
-  '取消的訂位不佔容量,剛好填滿可以成功');
+  $$select public.create_reservation(920001, (select d from fx), 'Test D', 'd@test.local', 1::smallint)$$,
+  'cancelled reservations free capacity, filling the slot exactly succeeds');
 select throws_ok(
-  $$select public.create_reservation(920001, (select d from fx), '測試 戊', 'e@test.local', 1::smallint)$$,
-  'P0001', 'SLOT_FULL', '剛好滿額後再訂被拒');
+  $$select public.create_reservation(920001, (select d from fx), 'Test E', 'e@test.local', 1::smallint)$$,
+  'P0001', 'SLOT_FULL', 'rejects booking once exactly full');
 
 select throws_ok(
   $$select public.create_reservation(920001, (select today - 1 from fx), 'x', 'x@test.local', 1::smallint)$$,
-  'P0001', 'INVALID_DATE', '過去的日期被拒');
+  'P0001', 'INVALID_DATE', 'rejects past dates');
 select throws_ok(
   $$select public.create_reservation(920001, (select today + 31 from fx), 'x', 'x@test.local', 1::smallint)$$,
-  'P0001', 'INVALID_DATE', '超過 30 天後的日期被拒');
+  'P0001', 'INVALID_DATE', 'rejects dates more than 30 days ahead');
 
 select throws_ok(
   $$select public.create_reservation(999999, (select d from fx), 'x', 'x@test.local', 1::smallint)$$,
-  'P0001', 'SLOT_NOT_AVAILABLE', '不存在的時段被拒');
+  'P0001', 'SLOT_NOT_AVAILABLE', 'rejects unknown slots');
 select throws_ok(
   $$select public.create_reservation(920002, (select d from fx), 'x', 'x@test.local', 1::smallint)$$,
-  'P0001', 'SLOT_NOT_AVAILABLE', '停用的時段被拒');
+  'P0001', 'SLOT_NOT_AVAILABLE', 'rejects inactive slots');
 select throws_ok(
   $$select public.create_reservation(920003, (select d from fx), 'x', 'x@test.local', 1::smallint)$$,
-  'P0001', 'SLOT_NOT_AVAILABLE', '星期幾不符的時段被拒');
+  'P0001', 'SLOT_NOT_AVAILABLE', 'rejects weekly slots on the wrong weekday');
 select throws_ok(
   $$select public.create_reservation(920001, (select d + 1 from fx), 'x', 'x@test.local', 1::smallint)$$,
-  'P0001', 'SLOT_NOT_AVAILABLE', '指定日期時段不能用在其他日期');
+  'P0001', 'SLOT_NOT_AVAILABLE', 'rejects date-specific slots on other dates');
 select throws_ok(
   $$select public.create_reservation(920004, (select today from fx), 'x', 'x@test.local', 1::smallint)$$,
-  'P0001', 'SLOT_IN_PAST', '今天已經過去的時段被拒');
+  'P0001', 'SLOT_IN_PAST', 'rejects slots already past today');
 
 select throws_ok(
   $$select public.create_reservation(920003, (select d + 1 from fx), 'x', 'x@test.local', 9::smallint)$$,
-  '23514', null, '人數超過 8 被拒');
+  '23514', null, 'rejects party size over 8');
 select throws_ok(
   $$select public.create_reservation(920003, (select d + 1 from fx), 'x', 'x@test.local', 0::smallint)$$,
-  '23514', null, '人數 0 被拒');
+  '23514', null, 'rejects party size 0');
 select throws_ok(
   $$select public.create_reservation(920003, (select d + 1 from fx), 'x', 'not-an-email', 1::smallint)$$,
-  '23514', null, 'email 格式錯誤被拒');
+  '23514', null, 'rejects invalid email');
 select throws_ok(
   $$select public.create_reservation(920003, (select d + 1 from fx), '', 'x@test.local', 1::smallint)$$,
-  '23514', null, '空白姓名被拒');
+  '23514', null, 'rejects blank name');
 select throws_ok(
   $$select public.create_reservation(920003, (select d + 1 from fx), 'x', 'x@test.local', 1::smallint, null, repeat('a', 501))$$,
-  '23514', null, '備註超過 500 字被拒');
+  '23514', null, 'rejects notes over 500 characters');
 
 select results_eq(
   $$select slot_id, capacity, remaining from public.get_availability((select d from fx))
     where slot_id between 920000 and 929999$$,
   $$values (920001::bigint, 4, 0)$$,
-  'get_availability 只列啟用且適用該日的時段,剩餘人數扣除未取消訂位');
+  'get_availability lists active slots for the date, remaining excludes non-cancelled bookings');
 select results_eq(
   $$select slot_id, remaining from public.get_availability((select d + 1 from fx))
     where slot_id between 920000 and 929999$$,
   $$values (920003::bigint, 20)$$,
-  'get_availability 依星期幾列出每週固定時段');
+  'get_availability lists weekly slots by weekday');
 
 select * from finish();
 rollback;
