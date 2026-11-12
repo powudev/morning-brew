@@ -12,7 +12,7 @@ can be **fast, accessible, and secure by design**, with every change tested and 
 automatically.
 
 - **Live demo:** [cafe.powu.dev](https://cafe.powu.dev)
-- **Video walkthrough (Loom):** _coming soon_
+- **Video walkthrough (3 min, captions, no voice-over):** [youtu.be/1cUUT6e9hvk](https://youtu.be/1cUUT6e9hvk)
 
 ## Why this matters if your app was built with AI
 
