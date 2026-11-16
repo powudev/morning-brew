@@ -9,6 +9,11 @@ updates:
     cooldown:
       default-days: 7
     open-pull-requests-limit: 5
+    ignore:
+      # Node type definitions must match the runtime (Node 24 LTS).
+      # Bump this together with the Node version, not on its own.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
     groups:
       dev-dependencies:
         dependency-type: development
