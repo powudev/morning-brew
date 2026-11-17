@@ -117,9 +117,9 @@ at the same moment: exactly 4 succeed.
 
 **4. Staff see only what staff should see.**
 Staff sign in with their own accounts, and public sign-up is turned off. The database rules (RLS)
-allow only staff accounts to view reservations and time slots. Staff can change only a booking's
-status and a slot's capacity or on/off switch, nothing else. Anyone else who signs in is signed out
-immediately and sees nothing.
+allow only staff accounts to view reservations and time slots. On a booking, staff can change only
+its status, never the guest's details. They can add time slots and adjust them, but can't delete
+anything. Anyone else who signs in is signed out immediately and sees nothing.
 
 **5. The powerful key stays on the server.**
 The database master key lives only in Cloudflare's encrypted settings. It is never in the browser,
@@ -147,7 +147,9 @@ or tracking scripts.
   failures are logged, never surfaced as a failed booking. `POST /api/admin/notify-confirmed`
   verifies the caller's Supabase access token with Auth, checks `staff`, then claims the row in one
   `PATCH … status=eq.confirmed&confirmed_email_sent_at=is.null`; a failed send releases the claim.
-  Both use an `Idempotency-Key`. User input is HTML-escaped and never placed in the subject.
+  Both use an `Idempotency-Key`. Because the form can target any address, the "received" email
+  never repeats free text from the form; the "confirmed" email (staff-reviewed) includes the name,
+  flattened to one line and HTML-escaped. User input is never placed in the subject.
 - **Overbooking**: `create_reservation()` takes `select … for update` on the slot row and checks
   capacity in the same transaction. The concurrency test (10 parallel bookings, capacity 4) was
   verified the other way too: with the lock removed, it catches the overbooking every time.
@@ -179,7 +181,7 @@ Counts as of November 2026:
 
 | Layer | Tool | What it covers | Count |
 |---|---|---|---|
-| Unit / component | Vitest, Testing Library | validation rules, i18n, SEO, CSP builder, API handlers and email (external services mocked), form, dashboard and time slot screens | 241 |
+| Unit / component | Vitest, Testing Library | validation rules, i18n, SEO, CSP builder, API handlers and email (external services mocked), form, dashboard and time slot screens | 244 |
 | Integration: database | pgTAP (`supabase test db`) | schema, table and column privileges, RLS policies, booking and availability functions | 60 |
 | Integration: API | Vitest + local Supabase | real Auth + REST API + RLS as anonymous / non-staff / staff, including the confirmation email endpoint | 19 |
 | End-to-end | Playwright + axe-core | both languages, desktop and mobile: pages, booking success and failures (field errors, full slot, Turnstile rejection), emails (captured by a local stand-in for the email API), staff sign-in, status changes and time slots, accessibility, security headers and CSP | 279 |

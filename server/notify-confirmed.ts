@@ -50,6 +50,9 @@ export async function handleNotifyConfirmed(
 
   const token = /^Bearer (\S+)$/.exec(request.headers.get("Authorization") ?? "")?.[1];
   if (!token) return jsonResponse({ error: "UNAUTHORIZED" }, 401);
+  // Email off: answer before touching Supabase, so confirming works the same as before email existed.
+  const config = emailConfig(env);
+  if (!config) return jsonResponse({ sent: false, reason: "EMAIL_DISABLED" }, 200);
 
   let claimed: Claimed | undefined;
   try {
@@ -57,8 +60,6 @@ export async function handleNotifyConfirmed(
     if (!userId) return jsonResponse({ error: "UNAUTHORIZED" }, 401);
     const staff = await selectRows(db, "staff", `user_id=eq.${encodeURIComponent(userId)}&select=user_id`, fetchImpl);
     if (staff.length === 0) return jsonResponse({ error: "FORBIDDEN" }, 403);
-
-    if (!emailConfig(env)) return jsonResponse({ sent: false, reason: "EMAIL_DISABLED" }, 200);
 
     // Claim in one statement: only a confirmed reservation that hasn't been emailed matches.
     [claimed] = await patchRows<Claimed>(
@@ -83,7 +84,7 @@ export async function handleNotifyConfirmed(
       startTime: (slot?.start_time ?? "").slice(0, 5),
       partySize: claimed.party_size,
     });
-    await sendEmail(emailConfig(env)!, { ...content, to: claimed.email, idempotencyKey: `confirmed/${id}` }, fetchImpl);
+    await sendEmail(config, { ...content, to: claimed.email, idempotencyKey: `confirmed/${id}` }, fetchImpl);
   } catch (err) {
     console.error("notify-confirmed: email failed", err);
     // Release the claim so confirming again can retry.

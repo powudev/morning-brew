@@ -61,7 +61,7 @@ eachLocale((locale) => {
       await expect.poll(async () => (await mailTo(email)).length).toBe(1);
       const [mail] = await mailTo(email);
       expect(mail.subject).toBe("Reservation request received · 已收到訂位申請 – Morning Brew (demo)");
-      expect(mail.text).toContain("E2E Guest");
+      expect(mail.text).not.toContain("E2E Guest");
       expect(mail.text).toContain("3 guests");
       expect(mail.text).toContain("Demo project / fictional business");
       expect(mail.idempotencyKey).toBe(`received/${sql(`select id from public.reservations where email = '${email}'`)}`);

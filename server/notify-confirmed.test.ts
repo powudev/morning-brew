@@ -119,10 +119,15 @@ describe("handleNotifyConfirmed: sending", () => {
     expect(urls(fetch).some((u) => u.includes(MAIL_URL))).toBe(false);
   });
 
-  it("email not configured: 200 sent=false after the staff check, nothing written", async () => {
+  it("email not configured: 200 sent=false without calling Supabase at all (dashboard shows no error)", async () => {
     const fetch = mockFetch(routes());
     expect(await call(fetch, post(), env)).toEqual({ status: 200, body: { sent: false, reason: "EMAIL_DISABLED" } });
-    expect(urls(fetch).some((u) => u.startsWith("PATCH"))).toBe(false);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("email not configured still requires a bearer token", async () => {
+    const fetch = mockFetch(routes());
+    expect((await call(fetch, post({ id: ID }, {}), env)).status).toBe(401);
   });
 
   it("email provider fails: the claim is released so it can be retried, 502", async () => {

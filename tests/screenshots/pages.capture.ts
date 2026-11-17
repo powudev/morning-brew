@@ -39,7 +39,8 @@ test("staff dashboard: reservations", async ({ page }) => {
   await page.getByLabel("Password").fill(process.env.E2E_USER_PASSWORD ?? "");
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Reservations" })).toBeVisible();
-  await expect(page.getByRole("listitem").first()).toBeVisible();
+  // Reservation rows (the staff nav is also a list, so match rows by their label).
+  await expect(page.locator("li[aria-labelledby]").first()).toBeVisible();
   await page.getByText(STAFF_EMAIL).evaluateAll((els) => els.forEach((el) => (el.textContent = "staff@example.com")));
   await shot(page, "admin-dashboard", true);
 });

@@ -28,7 +28,6 @@ describe("email templates", () => {
     const m = receivedEmail(details);
     expect(m.subject).toBe("Reservation request received · 已收到訂位申請 – Morning Brew (demo)");
     for (const body of [m.text, m.html]) {
-      expect(body).toContain("Demo Guest");
       expect(body).toContain("Tuesday 3 March 2099");
       expect(body).toContain("2099年3月3日");
       expect(body).toContain("08:30");
@@ -38,6 +37,20 @@ describe("email templates", () => {
       expect(body).toContain("尚未確認");
       expect(body).not.toMatch(/is confirmed/);
     }
+  });
+
+  it("received: never echoes the guest's free-text name (anyone can trigger it for any address)", () => {
+    const m = receivedEmail({ ...details, name: "Visit evil.example now" });
+    for (const body of [m.text, m.html]) {
+      expect(body).not.toContain("evil.example");
+      expect(body).toMatch(/^(Hello|<!doctype)/);
+    }
+  });
+
+  it("confirmed: greets by name with line breaks and control characters flattened", () => {
+    const m = confirmedEmail({ ...details, name: "Demo\r\n\nGuest\u0000 \t Two" });
+    expect(m.text).toContain("Hi Demo Guest Two,");
+    expect(m.html).toContain("Hi Demo Guest Two,");
   });
 
   it("confirmed: says the reservation is confirmed", () => {
@@ -62,7 +75,7 @@ describe("email templates", () => {
 
   it("escapes user input in HTML and keeps it out of the subject", () => {
     const evil = { ...details, name: `<img src=x onerror="alert(1)"> & "Bob"` };
-    for (const m of [receivedEmail(evil), confirmedEmail(evil)]) {
+    for (const m of [confirmedEmail(evil)]) {
       expect(m.html).not.toContain("<img");
       expect(m.html).toContain("&lt;img src=x onerror=&quot;alert(1)&quot;&gt; &amp; &quot;Bob&quot;");
       expect(m.subject).not.toContain("img");

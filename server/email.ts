@@ -73,6 +73,11 @@ const enGuests = (n: number) => `${n} ${n === 1 ? "guest" : "guests"}`;
 
 type Kind = "received" | "confirmed";
 
+/** Control characters and line breaks become single spaces, so a name can't add lines to the email. */
+export function flattenName(name: string): string {
+  return name.replace(/[\u0000-\u001f\u007f]+/g, " ").replace(/\s+/g, " ").trim();
+}
+
 const copy = {
   received: {
     subject: "Reservation request received · 已收到訂位申請",
@@ -98,9 +103,14 @@ const DEMO_ZH = "示範專案／虛構店家：Morning Brew 並非真實咖啡�
 function build(kind: Kind, d: EmailDetails): EmailContent {
   const c = copy[kind];
   const subject = `${c.subject} – Morning Brew (demo)`;
+  // "Received" can be triggered by anyone for any address, so it never echoes free text from the form.
+  // "Confirmed" is sent only after staff review; the name is flattened to one line.
+  const guest = kind === "confirmed" ? flattenName(d.name) : "";
+  const enGreeting = guest ? `Hi ${guest},` : "Hello,";
+  const zhGreeting = guest ? `${guest} 您好：` : "您好：";
 
   const text = [
-    `Hi ${d.name},`,
+    enGreeting,
     "",
     c.enHeading,
     `Date: ${enDate(d.date)}`,
@@ -110,7 +120,7 @@ function build(kind: Kind, d: EmailDetails): EmailContent {
     "",
     "———",
     "",
-    `${d.name} 您好：`,
+    zhGreeting,
     "",
     c.zhHeading,
     `日期：${zhDate(d.date)}`,
@@ -123,7 +133,6 @@ function build(kind: Kind, d: EmailDetails): EmailContent {
     DEMO_ZH,
   ].join("\n");
 
-  const name = escapeHtml(d.name);
   const row = (label: string, value: string) =>
     `<tr><td style="padding:2px 12px 2px 0;color:#555">${label}</td><td style="padding:2px 0"><strong>${value}</strong></td></tr>`;
   const html = `<!doctype html>
@@ -131,14 +140,14 @@ function build(kind: Kind, d: EmailDetails): EmailContent {
 <div style="max-width:560px;margin:0 auto;background:#fffdf9;border-radius:12px;padding:24px">
 <h1 style="font-size:20px;margin:0 0 16px">Morning Brew (demo)</h1>
 <div lang="en">
-<p>Hi ${name},</p>
+<p>${escapeHtml(enGreeting)}</p>
 <p>${c.enHeading}</p>
 <table role="presentation">${row("Date", enDate(d.date))}${row("Time", d.startTime)}${row("Party", enGuests(d.partySize))}</table>
 <p>${c.enStatus}</p>
 </div>
 <hr style="border:0;border-top:1px solid #e5d9c8;margin:20px 0">
 <div lang="zh-Hant-TW">
-<p>${name} 您好：</p>
+<p>${escapeHtml(zhGreeting)}</p>
 <p>${c.zhHeading}</p>
 <table role="presentation">${row("日期", zhDate(d.date))}${row("時間", d.startTime)}${row("人數", `${d.partySize} 位`)}</table>
 <p>${c.zhStatus}</p>

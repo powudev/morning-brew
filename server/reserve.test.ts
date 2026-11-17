@@ -206,7 +206,7 @@ describe("handleReserve: received email", () => {
     const sent = JSON.parse(init.body as string) as { to: string[]; subject: string; text: string };
     expect(sent.to).toEqual(["demo@example.com"]);
     expect(sent.subject).toMatch(/received/);
-    expect(sent.text).toContain("Demo Guest");
+    expect(sent.text).not.toContain("Demo Guest");
     expect(sent.text).toContain("08:30");
     expect(sent.text).toContain("2 guests");
     expect(new Headers(init.headers).get("idempotency-key")).toBe("received/11111111-2222-3333-4444-555555555555");
