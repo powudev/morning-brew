@@ -37,13 +37,15 @@ More screenshots are in [`docs/screenshots/`](docs/screenshots/).
 - Home, menu, about, privacy and reservation pages, in English (default) and Traditional Chinese (`/zh-tw/`)
 - Online booking: pick a date, see the remaining seats for each time slot, and book
 - Bot protection with Cloudflare Turnstile (usually invisible to real people)
+- Email notifications in both languages: "request received" right after booking and "confirmed" once staff confirm it (built and tested; switched off on the live demo until an email provider is set up)
 - Works well on phones and with keyboards and screen readers. Every page passes automated accessibility checks (axe-core, WCAG 2.1 AA rules)
 - SEO: per-page metadata, `hreflang` for both languages, sitemap, robots.txt, and structured data (JSON-LD)
 
 **For staff**
 - Private sign-in (staff accounts only, public sign-up is disabled)
 - Reservation list by date, with status filters and a daily summary
-- Confirm, cancel, or reset a reservation to pending
+- Confirm, cancel, or reset a reservation to pending (confirming emails the guest once)
+- Time slot management: add weekly or date-specific slots, change capacity, and deactivate slots
 
 ## Tech stack
 
@@ -115,15 +117,23 @@ at the same moment: exactly 4 succeed.
 
 **4. Staff see only what staff should see.**
 Staff sign in with their own accounts, and public sign-up is turned off. The database rules (RLS)
-in the database allows only staff accounts to view reservations, and they can change only the
-booking status. Anyone else who signs in is signed out immediately and sees nothing.
+allow only staff accounts to view reservations and time slots. Staff can change only a booking's
+status and a slot's capacity or on/off switch, nothing else. Anyone else who signs in is signed out
+immediately and sees nothing.
 
 **5. The powerful key stays on the server.**
 The database master key lives only in Cloudflare's encrypted settings. It is never in the browser,
 the code repository, or the build output.
 
+**6. Emails go out only for real bookings, and only once.**
+The "received" email is sent only after the bot check passes and the booking is saved. The
+"confirmed" email can be triggered only by a signed-in staff account, and the database records that
+it was sent, so pressing "Confirm" again never emails the guest twice. If the email service is down,
+bookings still work.
+
 **Privacy.** The site collects only what a booking needs (name, email, optional phone and note).
-The map loads from OpenStreetMap only after the visitor clicks. The site itself adds no analytics
+When email notifications are on, the guest's address and booking details are passed to the email
+service (Resend) for those two messages only. The map loads from OpenStreetMap only after the visitor clicks. The site itself adds no analytics
 or tracking scripts.
 
 <details>
@@ -132,11 +142,19 @@ or tracking scripts.
 - **Request handling** (`server/reserve.ts`): content-type and body-size checks → zod validation →
   server-side Turnstile verification → `create_reservation()`. External failures return 503
   (fail closed); unexpected errors return 500 without internal details.
+- **Email** (`server/email.ts`, `server/notify-confirmed.ts`): Resend HTTP API, optional (no key =
+  no email, bookings unaffected). "Received" is sent after the response via `waitUntil`; send
+  failures are logged, never surfaced as a failed booking. `POST /api/admin/notify-confirmed`
+  verifies the caller's Supabase access token with Auth, checks `staff`, then claims the row in one
+  `PATCH … status=eq.confirmed&confirmed_email_sent_at=is.null`; a failed send releases the claim.
+  Both use an `Idempotency-Key`. User input is HTML-escaped and never placed in the subject.
 - **Overbooking**: `create_reservation()` takes `select … for update` on the slot row and checks
   capacity in the same transaction. The concurrency test (10 parallel bookings, capacity 4) was
   verified the other way too: with the lock removed, it catches the overbooking every time.
 - **Privileges**: `anon` has no table privileges; `authenticated` has `select` and column-level
-  `update (status)`; RLS policies use a `security definer` staff check. Tested with pgTAP and
+  `update (status)` on reservations and `update (start_time, capacity, is_active)` on time slots
+(the dashboard edits only capacity and the on/off switch); no deletes; RLS policies use a
+`security definer` staff check. Tested with pgTAP and
   against real Auth + PostgREST as anonymous, non-staff and staff users.
 - **Content Security Policy**: Next.js static export can't use nonces, so a post-build step hashes
   every inline script and writes a per-page CSP: `script-src 'self'` + those hashes + Turnstile,
@@ -161,10 +179,10 @@ Counts as of November 2026:
 
 | Layer | Tool | What it covers | Count |
 |---|---|---|---|
-| Unit / component | Vitest, Testing Library | validation rules, i18n, SEO, CSP builder, API handlers (external services mocked), form and dashboard behaviour | 172 |
-| Integration: database | pgTAP (`supabase test db`) | schema, table privileges, RLS policies, booking and availability functions | 49 |
-| Integration: API | Vitest + local Supabase | real Auth + REST API + RLS as anonymous / non-staff / staff | 10 |
-| End-to-end | Playwright + axe-core | both languages, desktop and mobile: pages, booking success and failures (field errors, full slot, Turnstile rejection), staff sign-in and status changes, accessibility, security headers and CSP | 268 |
+| Unit / component | Vitest, Testing Library | validation rules, i18n, SEO, CSP builder, API handlers and email (external services mocked), form, dashboard and time slot screens | 241 |
+| Integration: database | pgTAP (`supabase test db`) | schema, table and column privileges, RLS policies, booking and availability functions | 60 |
+| Integration: API | Vitest + local Supabase | real Auth + REST API + RLS as anonymous / non-staff / staff, including the confirmation email endpoint | 19 |
+| End-to-end | Playwright + axe-core | both languages, desktop and mobile: pages, booking success and failures (field errors, full slot, Turnstile rejection), emails (captured by a local stand-in for the email API), staff sign-in, status changes and time slots, accessibility, security headers and CSP | 279 |
 
 Some real problems the tests caught during development:
 - a database function let a weekly time slot be booked on the wrong weekday (a `NULL` comparison bug), caught by pgTAP;
@@ -276,6 +294,9 @@ See [`.env.example`](.env.example). Never commit real values.
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | build | yes |
 | `SUPABASE_SERVICE_ROLE_KEY` | Cloudflare Pages env only | **no** |
 | `TURNSTILE_SECRET_KEY` | Cloudflare Pages env only | **no** |
+| `RESEND_API_KEY` | Cloudflare Pages env only (optional: no key = no email) | **no** |
+| `EMAIL_FROM` | Cloudflare Pages env (optional), e.g. `Morning Brew Demo <reservations@your-domain>` | yes |
+| `EMAIL_API_URL` | tests only (points email at a local stand-in) | yes |
 
 ## Deployment
 

@@ -112,6 +112,10 @@
         "text": "The map on the home page is provided by OpenStreetMap and only connects after you click “Load map”."
       },
       {
+        "title": "Email notifications",
+        "text": "When email notifications are turned on, we send two emails to the address you enter: one when your request is received and one when the café confirms it. They are sent through the email service Resend and contain only your reservation details."
+      },
+      {
         "title": "Please don't enter real data",
         "text": "This is a demo project. Please do not enter real personal information; demo data is cleared regularly."
       }
