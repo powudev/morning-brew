@@ -7,6 +7,7 @@ import { localSupabase } from "../e2e/support/local-supabase";
 
 const DOMAIN = "integration.test";
 const DATE = "2099-03-03";
+const NEW_SLOT_DATE = "2099-03-05";
 const password = randomBytes(12).toString("hex");
 const { url, anonKey, serviceKey } = localSupabase();
 
@@ -25,7 +26,7 @@ async function createUser(email: string): Promise<string> {
 function cleanup() {
   sql(`
     delete from public.reservations where email like '%@${DOMAIN}';
-    delete from public.time_slots where id in (980001, 980002);
+    delete from public.time_slots where id in (980001, 980002) or slot_date = '${NEW_SLOT_DATE}';
     delete from auth.users where email like '%@${DOMAIN}';
   `);
 }
@@ -131,5 +132,59 @@ describe("staff", () => {
     await api.signOut();
     expect(await api.getSession()).toBeNull();
     await expect(api.listReservations(DATE)).rejects.toMatchObject({ code: "forbidden" });
+  });
+});
+
+describe("time slots", () => {
+  const newSlot = { weekday: null, date: NEW_SLOT_DATE, startTime: "07:15", capacity: 6 };
+
+  it("anon cannot list, create or update slots", async () => {
+    const api = newApi();
+    await expect(api.listSlots()).rejects.toMatchObject({ code: "forbidden" });
+    await expect(api.createSlot(newSlot)).rejects.toMatchObject({ code: "forbidden" });
+    await expect(api.updateSlot(980001, { capacity: 1 })).rejects.toMatchObject({ code: "forbidden" });
+  });
+
+  it("non-staff sees no slots and cannot create or update them", async () => {
+    const api = newApi();
+    await api.signIn(`customer@${DOMAIN}`, password);
+    expect(await api.listSlots()).toEqual([]);
+    await expect(api.createSlot(newSlot)).rejects.toMatchObject({ code: "forbidden" });
+    await expect(api.updateSlot(980001, { capacity: 1, active: false })).rejects.toMatchObject({ code: "forbidden" });
+    expect(sql(`select capacity || ',' || is_active from public.time_slots where id = 980001`)).toBe("10,true");
+    expect(sql(`select count(*) from public.time_slots where slot_date = '${NEW_SLOT_DATE}'`)).toBe("0");
+  });
+
+  it("staff lists slots including date-specific ones", async () => {
+    const api = newApi();
+    await api.signIn(`staff@${DOMAIN}`, password);
+    const slots = await api.listSlots();
+    expect(slots.find((x) => x.id === 980001)).toEqual({
+      id: 980001,
+      weekday: null,
+      date: DATE,
+      startTime: "08:00",
+      capacity: 10,
+      active: true,
+    });
+  });
+
+  it("staff creates a slot; the same date and time again is a duplicate", async () => {
+    const api = newApi();
+    await api.signIn(`staff@${DOMAIN}`, password);
+    const created = await api.createSlot(newSlot);
+    expect(created).toMatchObject({ date: NEW_SLOT_DATE, startTime: "07:15", capacity: 6, active: true });
+    expect(sql(`select capacity from public.time_slots where id = ${created.id}`)).toBe("6");
+    await expect(api.createSlot(newSlot)).rejects.toMatchObject({ code: "duplicate" });
+  });
+
+  it("staff changes capacity and active flag; invalid capacity and unknown ids are refused", async () => {
+    const api = newApi();
+    await api.signIn(`staff@${DOMAIN}`, password);
+    await api.updateSlot(980002, { capacity: 15 });
+    await api.updateSlot(980002, { active: false });
+    expect(sql(`select capacity || ',' || is_active from public.time_slots where id = 980002`)).toBe("15,false");
+    await expect(api.updateSlot(980002, { capacity: 0 })).rejects.toMatchObject({ code: "invalid" });
+    await expect(api.updateSlot(999999999, { capacity: 3 })).rejects.toMatchObject({ code: "not_found" });
   });
 });

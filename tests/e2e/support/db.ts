@@ -32,12 +32,19 @@ export const concurrencySlotId = 990900;
 const adminDays: Record<string, number> = { desktop: 10, mobile: 11 };
 const adminBase: Record<string, number> = { desktop: 990500, mobile: 990600 };
 export const adminDate = (project: string) => dateFor(adminDays[project]);
-export const adminSlots = (project: string) => ({ early: adminBase[project] + 1, late: adminBase[project] + 2 });
+export const adminSlots = (project: string) => ({
+  early: adminBase[project] + 1,
+  late: adminBase[project] + 2,
+  managed: adminBase[project] + 3,
+});
+/** Slots created through the staff UI get identity ids, so they live in a far-future year that cleanup removes. */
+const uiSlotYear: Record<string, string> = { desktop: "2097", mobile: "2096" };
+export const uiSlotDate = (project: string) => `${uiSlotYear[project]}-01-05`;
 
 export function cleanup(): void {
   sql(`
     delete from public.reservations where email like '%@${E2E_EMAIL_DOMAIN}' or slot_id >= 990000;
-    delete from public.time_slots where id >= 990000;
+    delete from public.time_slots where id >= 990000 or slot_date between '2096-01-01' and '2097-12-31';
     delete from auth.users where email like '%@${E2E_EMAIL_DOMAIN}';
   `);
 }
@@ -54,8 +61,12 @@ export function seedFixtures(): void {
   }
   rows.push(`(${concurrencySlotId}, '${dateFor(concurrencyDay)}', '06:00', 4)`);
   for (const project of Object.keys(adminDays)) {
-    const { early, late } = adminSlots(project);
-    rows.push(`(${early}, '${adminDate(project)}', '06:00', 20)`, `(${late}, '${adminDate(project)}', '06:30', 20)`);
+    const { early, late, managed } = adminSlots(project);
+    rows.push(
+      `(${early}, '${adminDate(project)}', '06:00', 20)`,
+      `(${late}, '${adminDate(project)}', '06:30', 20)`,
+      `(${managed}, '${adminDate(project)}', '07:00', 5)`,
+    );
   }
   sql(`
     insert into public.time_slots (id, slot_date, start_time, capacity) overriding system value

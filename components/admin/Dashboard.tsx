@@ -1,9 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { LOGIN_PATH, useAdminApi } from "@/components/admin/useAdminApi";
-import { AdminApiError } from "@/lib/admin-api";
+import StaffBar from "@/components/admin/StaffBar";
+import { useStaffSession } from "@/components/admin/useStaffSession";
 import {
   reservationStatuses,
   summarize,
@@ -33,38 +32,12 @@ const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one :
 const controlClass = "mt-1 block min-h-11 rounded-lg border border-espresso/30 bg-foam px-3";
 
 export default function Dashboard() {
-  const router = useRouter();
-  const api = useAdminApi();
-  const [ready, setReady] = useState(false);
-  const [email, setEmail] = useState("");
+  const { ready, email, signOut, handleForbidden, api } = useStaffSession();
   const [date, setDate] = useState(() => todayInTaipei());
   const [filter, setFilter] = useState<ReservationStatus | "all">("all");
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    (async () => {
-      try {
-        const session = await api().getSession();
-        if (!session) return router.replace(LOGIN_PATH);
-        if (!(await api().isStaff())) {
-          await api().signOut();
-          return router.replace(LOGIN_PATH);
-        }
-        if (active) {
-          setEmail(session.email);
-          setReady(true);
-        }
-      } catch {
-        router.replace(LOGIN_PATH);
-      }
-    })();
-    return () => {
-      active = false;
-    };
-  }, [api, router]);
 
   useEffect(() => {
     if (!ready) return;
@@ -73,14 +46,13 @@ export default function Dashboard() {
       .listReservations(date)
       .then((list) => active && setLoaded({ date, list, error: null }))
       .catch((err: unknown) => {
-        if (!active) return;
-        if (err instanceof AdminApiError && err.code === "forbidden") return router.replace(LOGIN_PATH);
+        if (!active || handleForbidden(err)) return;
         setLoaded({ date, list: [], error: "Couldn't load reservations. Please try again." });
       });
     return () => {
       active = false;
     };
-  }, [ready, date, api, router]);
+  }, [ready, date, api, handleForbidden]);
 
   async function changeStatus(r: AdminReservation, status: ReservationStatus) {
     setActionError(null);
@@ -89,16 +61,11 @@ export default function Dashboard() {
       await api().updateStatus(r.id, status);
       setLoaded((l) => l && { ...l, list: l.list.map((x) => (x.id === r.id ? { ...x, status } : x)) });
     } catch (err) {
-      if (err instanceof AdminApiError && err.code === "forbidden") return router.replace(LOGIN_PATH);
+      if (handleForbidden(err)) return;
       setActionError("Couldn't save the change. Please try again.");
     } finally {
       setSaving(null);
     }
-  }
-
-  async function signOut() {
-    await api().signOut();
-    router.replace(LOGIN_PATH);
   }
 
   if (!ready) return <p className="py-8 text-ink/80">Checking your session…</p>;
@@ -110,19 +77,8 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="font-display text-3xl font-bold text-espresso">Reservations</h1>
-        <div className="flex items-center gap-3 text-sm">
-          <span className="text-ink/80">{email}</span>
-          <button
-            type="button"
-            onClick={signOut}
-            className="inline-flex min-h-11 items-center rounded-full border border-espresso/30 px-4 font-semibold hover:bg-espresso/5"
-          >
-            Sign out
-          </button>
-        </div>
-      </div>
+      <StaffBar email={email} onSignOut={signOut} />
+      <h1 className="font-display text-3xl font-bold text-espresso">Reservations</h1>
 
       <div className="flex flex-wrap items-end gap-4">
         <div>

@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(29);
+select plan(38);
 
 insert into auth.users (id, email) values
   ('11111111-1111-1111-1111-111111111111', 'staff@test.local'),
@@ -36,6 +36,8 @@ select throws_ok(
 select throws_ok($$select * from public.get_availability('2099-01-01')$$,
   '42501', null, 'anon cannot call get_availability');
 select throws_ok('select private.is_staff()', '42501', null, 'anon cannot use the private schema');
+select throws_ok('update public.time_slots set capacity = 99 where id = 910001',
+  '42501', null, 'anon cannot update time slots');
 reset role;
 
 select set_config('request.jwt.claims',
@@ -56,10 +58,14 @@ select throws_ok(
 select throws_ok(
   $$select public.create_reservation(910001, '2099-01-01', 'x', 'x@test.local', 1::smallint)$$,
   '42501', null, 'non-staff cannot call create_reservation');
+update public.time_slots set capacity = 99, is_active = false where id = 910001;
 reset role;
 select is(
   (select status::text from public.reservations where id = 'aaaaaaaa-0000-0000-0000-000000000001'),
   'pending', 'non-staff update changes nothing');
+select is(
+  (select (capacity, is_active)::text from public.time_slots where id = 910001),
+  '(10,t)', 'non-staff time slot update changes nothing');
 
 select set_config('request.jwt.claims',
   '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}', true);
@@ -87,6 +93,27 @@ select throws_ok(
 select lives_ok(
   $$insert into public.time_slots (slot_date, start_time, capacity) values ('2099-01-02', '10:00', 5)$$,
   'staff can insert time slots');
+select lives_ok(
+  $$update public.time_slots set capacity = 12, is_active = false where id = 910001$$,
+  'staff can change time slot capacity and active flag');
+select is(
+  (select (capacity, is_active)::text from public.time_slots where id = 910001),
+  '(12,f)', 'time slot capacity and active flag are saved');
+select throws_ok(
+  $$update public.time_slots set slot_date = '2099-02-01' where id = 910001$$,
+  '42501', null, 'staff cannot move a time slot to another date');
+select throws_ok(
+  $$update public.time_slots set weekday = 3, slot_date = null where id = 910001$$,
+  '42501', null, 'staff cannot turn a time slot into another weekday');
+select throws_ok(
+  $$insert into public.time_slots (slot_date, start_time, capacity) values ('2099-01-02', '10:00', 6)$$,
+  '23505', null, 'duplicate date and time is rejected');
+select throws_ok(
+  $$insert into public.time_slots (slot_date, start_time, capacity) values ('2099-01-03', '10:00', 0)$$,
+  '23514', null, 'capacity below 1 is rejected');
+select throws_ok(
+  $$insert into public.time_slots (weekday, slot_date, start_time, capacity) values (1, '2099-01-03', '10:00', 5)$$,
+  '23514', null, 'a slot cannot be both weekly and date-specific');
 select throws_ok(
   $$delete from public.time_slots where id = 910001$$,
   '42501', null, 'staff cannot delete time slots (deactivate with is_active instead)');

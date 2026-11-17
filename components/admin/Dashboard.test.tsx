@@ -9,7 +9,7 @@ import { todayInTaipei } from "@/lib/dates";
 
 const router = vi.hoisted(() => ({ replace: vi.fn() }));
 const replace = router.replace;
-vi.mock("next/navigation", () => ({ useRouter: () => router }));
+vi.mock("next/navigation", () => ({ useRouter: () => router, usePathname: () => "/admin/" }));
 const holder = vi.hoisted(() => ({ api: null as unknown }));
 vi.mock("@/lib/admin-api", async (orig) => ({
   ...(await orig<typeof import("@/lib/admin-api")>()),
@@ -113,7 +113,7 @@ describe("Dashboard: list", () => {
     render(<Dashboard />);
     await screen.findByRole("listitem", { name: /Early A/ });
     await user.selectOptions(screen.getByLabelText("Status"), "pending");
-    expect(screen.getAllByRole("listitem")).toHaveLength(1);
+    expect(screen.getAllByRole("listitem").filter((li) => li.hasAttribute("aria-labelledby"))).toHaveLength(1);
     expect(row("Late B")).toBeInTheDocument();
   });
 

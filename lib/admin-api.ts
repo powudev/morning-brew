@@ -6,8 +6,9 @@ import {
   type ReservationRow,
   type ReservationStatus,
 } from "@/lib/admin-reservations";
+import { mapSlotRow, type AdminSlot, type NewSlot, type SlotRow } from "@/lib/admin-slots";
 
-export type AdminErrorCode = "forbidden" | "not_found" | "network" | "unknown";
+export type AdminErrorCode = "forbidden" | "not_found" | "duplicate" | "invalid" | "network" | "unknown";
 
 export class AdminApiError extends Error {
   constructor(
@@ -29,15 +30,27 @@ export interface AdminApi {
   isStaff(): Promise<boolean>;
   listReservations(date: string): Promise<AdminReservation[]>;
   updateStatus(id: string, status: ReservationStatus): Promise<void>;
+  listSlots(): Promise<AdminSlot[]>;
+  createSlot(slot: NewSlot): Promise<AdminSlot>;
+  updateSlot(id: number, change: SlotChange): Promise<void>;
 }
+
+/** Only these columns are updatable by staff (column grants); weekday/date/time changes = new slot. */
+export type SlotChange = { capacity?: number; active?: boolean };
 
 type DbError = { code?: string; message?: string } | null;
 
 function toAdminError(error: NonNullable<DbError>): AdminApiError {
   if (error.code === "42501" || error.code?.startsWith("PGRST30")) return new AdminApiError("forbidden", error.message);
+  if (error.code === "23505") return new AdminApiError("duplicate", error.message);
+  if (error.code === "23514" || error.code === "22P02" || error.code === "22007") {
+    return new AdminApiError("invalid", error.message);
+  }
   if (/fetch|network/i.test(error.message ?? "")) return new AdminApiError("network", error.message);
   return new AdminApiError("unknown", error.message);
 }
+
+const SLOT_COLUMNS = "id, weekday, slot_date, start_time, capacity, is_active";
 
 const RESERVATION_COLUMNS =
   "id, reservation_date, name, email, phone, party_size, note, status, created_at, time_slots(start_time)";
@@ -78,6 +91,33 @@ export function createAdminApi(client: SupabaseClient): AdminApi {
       const { data, error } = await client.from("reservations").update({ status }).eq("id", id).select("id");
       if (error) throw toAdminError(error);
       // RLS filters rows silently: an update that matches nothing means no access or no such row.
+      if (!data || data.length === 0) {
+        throw new AdminApiError((await api.isStaff()) ? "not_found" : "forbidden");
+      }
+    },
+
+    async listSlots() {
+      const { data, error } = await client.from("time_slots").select(SLOT_COLUMNS);
+      if (error) throw toAdminError(error);
+      return (data as SlotRow[]).map(mapSlotRow);
+    },
+
+    async createSlot(slot) {
+      const { data, error } = await client
+        .from("time_slots")
+        .insert({ weekday: slot.weekday, slot_date: slot.date, start_time: slot.startTime, capacity: slot.capacity })
+        .select(SLOT_COLUMNS)
+        .single();
+      if (error) throw toAdminError(error);
+      return mapSlotRow(data as SlotRow);
+    },
+
+    async updateSlot(id, change) {
+      const patch: Record<string, unknown> = {};
+      if (change.capacity !== undefined) patch.capacity = change.capacity;
+      if (change.active !== undefined) patch.is_active = change.active;
+      const { data, error } = await client.from("time_slots").update(patch).eq("id", id).select("id");
+      if (error) throw toAdminError(error);
       if (!data || data.length === 0) {
         throw new AdminApiError((await api.isStaff()) ? "not_found" : "forbidden");
       }

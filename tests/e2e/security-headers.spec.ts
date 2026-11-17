@@ -6,6 +6,7 @@ const pages = [
   ...locales.flatMap((l) => publicPaths.map((p) => localePath(l, p))),
   "/admin/login/",
   "/admin/",
+  "/admin/slots/",
   "/no-such-page/",
 ];
 
@@ -39,7 +40,7 @@ test.describe("security headers", () => {
   }
 
   test("staff pages are not cached or indexed", async ({ request }) => {
-    for (const path of ["/admin/", "/admin/login/"]) {
+    for (const path of ["/admin/", "/admin/login/", "/admin/slots/"]) {
       const h = (await request.get(path)).headers();
       expect(h["cache-control"], path).toBe("no-store");
       expect(h["x-robots-tag"], path).toBe("noindex, nofollow");
