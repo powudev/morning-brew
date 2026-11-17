@@ -38,6 +38,7 @@ export default function Dashboard() {
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
     if (!ready) return;
@@ -56,10 +57,20 @@ export default function Dashboard() {
 
   async function changeStatus(r: AdminReservation, status: ReservationStatus) {
     setActionError(null);
+    setNotice(null);
     setSaving(r.id);
     try {
       await api().updateStatus(r.id, status);
       setLoaded((l) => l && { ...l, list: l.list.map((x) => (x.id === r.id ? { ...x, status } : x)) });
+      if (status === "confirmed") {
+        const email = await api().notifyConfirmed(r.id);
+        if (email === "sent") setNotice(`Confirmation email sent to ${r.email}.`);
+        if (email === "failed") {
+          setActionError(
+            "Status saved, but the confirmation email couldn't be sent. To retry, mark it as pending and confirm again.",
+          );
+        }
+      }
     } catch (err) {
       if (handleForbidden(err)) return;
       setActionError("Couldn't save the change. Please try again.");
@@ -120,6 +131,11 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {notice && (
+        <p role="status" className="rounded-lg bg-foam p-3 font-semibold text-espresso ring-1 ring-espresso/20">
+          {notice}
+        </p>
+      )}
       {actionError && (
         <div role="alert" className="rounded-lg border-2 border-red-800 bg-foam p-3 font-semibold text-red-800">
           {actionError}

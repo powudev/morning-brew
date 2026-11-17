@@ -159,6 +159,54 @@ describe("Dashboard: status changes", () => {
   });
 });
 
+describe("Dashboard: confirmation email", () => {
+  async function confirmLateB() {
+    const user = userEvent.setup();
+    render(<Dashboard />);
+    const b = await screen.findByRole("listitem", { name: /Late B/ });
+    await user.click(within(b).getByRole("button", { name: "Confirm reservation for Late B at 10:00" }));
+    return user;
+  }
+
+  it("after confirming, asks the server to email the guest and says so", async () => {
+    signedInStaff();
+    api.notifyConfirmed.mockResolvedValue("sent");
+    await confirmLateB();
+    expect(api.notifyConfirmed).toHaveBeenCalledWith("b");
+    expect(await screen.findByRole("status")).toHaveTextContent("Confirmation email sent to n@example.com.");
+  });
+
+  it("email off or already sent: no message", async () => {
+    signedInStaff();
+    api.notifyConfirmed.mockResolvedValue("skipped");
+    await confirmLateB();
+    await waitFor(() => expect(api.notifyConfirmed).toHaveBeenCalled());
+    await waitFor(() => expect(row("Late B")).toHaveTextContent("Confirmed"));
+    expect(screen.queryByRole("status")).toBeNull();
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("email failure keeps the confirmed status and explains how to retry", async () => {
+    signedInStaff();
+    api.notifyConfirmed.mockResolvedValue("failed");
+    await confirmLateB();
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Status saved, but the confirmation email couldn't be sent. To retry, mark it as pending and confirm again.",
+    );
+    expect(row("Late B")).toHaveTextContent("Confirmed");
+  });
+
+  it("other status changes don't send email", async () => {
+    signedInStaff();
+    const user = userEvent.setup();
+    render(<Dashboard />);
+    const b = await screen.findByRole("listitem", { name: /Late B/ });
+    await user.click(within(b).getByRole("button", { name: /^Cancel reservation for Late B/ }));
+    await waitFor(() => expect(row("Late B")).toHaveTextContent("Cancelled"));
+    expect(api.notifyConfirmed).not.toHaveBeenCalled();
+  });
+});
+
 describe("Dashboard: sign out", () => {
   it("Sign out signs out and returns to sign-in", async () => {
     signedInStaff();

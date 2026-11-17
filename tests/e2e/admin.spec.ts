@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "./support/fixtures";
+import { mailTo } from "./support/mail";
 import { adminDate, adminSlots, CUSTOMER_EMAIL, E2E_EMAIL_DOMAIN, sql, STAFF_EMAIL, uiSlotDate } from "./support/db";
 
 const password = () => process.env.E2E_USER_PASSWORD ?? "";
@@ -39,6 +40,17 @@ test.describe("staff area: access", () => {
     await expect(page).toHaveURL(/\/admin\/login\/$/);
   });
 
+  test("confirmation email API refuses callers without a valid staff token", async ({ request }) => {
+    const data = { id: "00000000-0000-0000-0000-000000000000" };
+    expect((await request.post("/api/admin/notify-confirmed", { data })).status()).toBe(401);
+    const forged = await request.post("/api/admin/notify-confirmed", {
+      data,
+      headers: { Authorization: "Bearer forged.jwt.token" },
+    });
+    expect(forged.status()).toBe(401);
+    expect(forged.headers()["cache-control"]).toBe("no-store");
+  });
+
   test("sign-in page has no WCAG 2.1 AA violations", async ({ page }) => {
     await page.goto("/admin/login/");
     expect((await axe(page)).violations.map((v) => v.id)).toEqual([]);
@@ -50,7 +62,7 @@ test.describe("staff area: staff", () => {
     const date = adminDate(testInfo.project.name);
     const { early } = adminSlots(testInfo.project.name);
     const name = `Admin E2E ${testInfo.project.name}`;
-    const email = `admin-${testInfo.project.name}@${E2E_EMAIL_DOMAIN}`;
+    const email = `admin-${testInfo.project.name}-${Date.now()}@${E2E_EMAIL_DOMAIN}`;
     sql(`insert into public.reservations (slot_id, reservation_date, name, email, party_size, note)
          values (${early}, '${date}', '${name}', '${email}', 2, 'E2E admin note')`);
 
@@ -70,6 +82,19 @@ test.describe("staff area: staff", () => {
     await item.getByRole("button", { name: `Confirm reservation for ${name} at 06:00` }).click();
     await expect(item).toContainText("Confirmed");
     await expect.poll(() => sql(`select status from public.reservations where email = '${email}'`)).toBe("confirmed");
+    await expect(page.getByRole("status")).toHaveText(`Confirmation email sent to ${email}.`);
+    const mails = await mailTo(email);
+    expect(mails.map((m) => m.subject)).toEqual(["Reservation confirmed · 訂位已確認 – Morning Brew (demo)"]);
+    expect(mails[0].text).toContain("06:00");
+
+    // Back to pending and confirmed again: the guest is not emailed twice.
+    await item.getByRole("button", { name: `Mark as pending reservation for ${name} at 06:00` }).click();
+    await expect(item).toContainText("Pending");
+    const notified = page.waitForResponse((r) => r.url().endsWith("/api/admin/notify-confirmed"));
+    await item.getByRole("button", { name: `Confirm reservation for ${name} at 06:00` }).click();
+    expect(await (await notified).json()).toEqual({ sent: false, reason: "NOTHING_TO_SEND" });
+    await expect(item).toContainText("Confirmed");
+    expect(await mailTo(email)).toHaveLength(1);
 
     await page.reload();
     await page.getByLabel("Date").fill(date);

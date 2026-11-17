@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(38);
+select plan(40);
 
 insert into auth.users (id, email) values
   ('11111111-1111-1111-1111-111111111111', 'staff@test.local'),
@@ -20,6 +20,7 @@ insert into public.reservations (id, slot_id, reservation_date, name, email, par
 select ok((select relrowsecurity from pg_class where oid = 'public.time_slots'::regclass), 'time_slots has RLS enabled');
 select ok((select relrowsecurity from pg_class where oid = 'public.reservations'::regclass), 'reservations has RLS enabled');
 select ok((select relrowsecurity from pg_class where oid = 'public.staff'::regclass), 'staff has RLS enabled');
+select col_is_null('public', 'reservations', 'confirmed_email_sent_at', 'reservations.confirmed_email_sent_at exists and is nullable');
 select hasnt_function('public', 'is_staff', 'is_staff is not in the public schema (not exposed as RPC)');
 
 set local role anon;
@@ -84,6 +85,9 @@ select is(
 select throws_ok(
   $$update public.reservations set name = 'hacked' where id = 'aaaaaaaa-0000-0000-0000-000000000001'$$,
   '42501', null, 'staff cannot change other reservation columns');
+select throws_ok(
+  $$update public.reservations set confirmed_email_sent_at = now() where id = 'aaaaaaaa-0000-0000-0000-000000000001'$$,
+  '42501', null, 'staff cannot mark the confirmation email as sent (server only)');
 select throws_ok(
   $$delete from public.reservations where id = 'aaaaaaaa-0000-0000-0000-000000000002'$$,
   '42501', null, 'staff cannot delete reservations');

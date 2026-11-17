@@ -33,7 +33,13 @@ export interface AdminApi {
   listSlots(): Promise<AdminSlot[]>;
   createSlot(slot: NewSlot): Promise<AdminSlot>;
   updateSlot(id: number, change: SlotChange): Promise<void>;
+  /** Asks the server to email the guest that their reservation is confirmed. Never throws. */
+  notifyConfirmed(id: string): Promise<NotifyResult>;
 }
+
+/** sent = emailed now; skipped = email off, not confirmed or already emailed; failed = try again later. */
+export type NotifyResult = "sent" | "skipped" | "failed";
+export const NOTIFY_CONFIRMED_PATH = "/api/admin/notify-confirmed";
 
 /** Only these columns are updatable by staff (column grants); weekday/date/time changes = new slot. */
 export type SlotChange = { capacity?: number; active?: boolean };
@@ -55,7 +61,7 @@ const SLOT_COLUMNS = "id, weekday, slot_date, start_time, capacity, is_active";
 const RESERVATION_COLUMNS =
   "id, reservation_date, name, email, phone, party_size, note, status, created_at, time_slots(start_time)";
 
-export function createAdminApi(client: SupabaseClient): AdminApi {
+export function createAdminApi(client: SupabaseClient, fetchImpl: typeof fetch = (...args) => fetch(...args)): AdminApi {
   const api: AdminApi = {
     async getSession() {
       const { data } = await client.auth.getSession();
@@ -120,6 +126,24 @@ export function createAdminApi(client: SupabaseClient): AdminApi {
       if (error) throw toAdminError(error);
       if (!data || data.length === 0) {
         throw new AdminApiError((await api.isStaff()) ? "not_found" : "forbidden");
+      }
+    },
+
+    async notifyConfirmed(id) {
+      try {
+        const { data } = await client.auth.getSession();
+        const token = data.session?.access_token;
+        if (!token) return "failed";
+        const res = await fetchImpl(NOTIFY_CONFIRMED_PATH, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ id }),
+        });
+        if (!res.ok) return "failed";
+        const body = (await res.json()) as { sent?: boolean };
+        return body.sent ? "sent" : "skipped";
+      } catch {
+        return "failed";
       }
     },
   };
