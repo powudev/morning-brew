@@ -1,9 +1,12 @@
 import { fieldErrors, reservationSchema } from "@/lib/reservation-schema";
 import { jsonResponse } from "@/server/http";
-import { rpc, type SupabaseEnv } from "@/server/supabase";
+import { emailConfig, receivedEmail, sendEmail, type EmailEnv } from "@/server/email";
+import { rpc, selectRows, type SupabaseEnv } from "@/server/supabase";
 import { verifyTurnstile } from "@/server/turnstile";
 
-export type ReserveEnv = SupabaseEnv & { TURNSTILE_SECRET_KEY?: string };
+export type ReserveEnv = SupabaseEnv & EmailEnv & { TURNSTILE_SECRET_KEY?: string };
+/** Runs work after the response is sent (Pages `waitUntil`). */
+export type Defer = (work: Promise<unknown>) => void;
 
 const MAX_BODY_BYTES = 8 * 1024;
 
@@ -14,7 +17,12 @@ const businessErrors: Record<string, number> = {
   INVALID_DATE: 422,
 };
 
-export async function handleReserve(request: Request, env: ReserveEnv, fetchImpl: typeof fetch = fetch): Promise<Response> {
+export async function handleReserve(
+  request: Request,
+  env: ReserveEnv,
+  fetchImpl: typeof fetch = fetch,
+  defer: Defer = (work) => void work,
+): Promise<Response> {
   const { NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, TURNSTILE_SECRET_KEY } = env;
   if (!NEXT_PUBLIC_SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !TURNSTILE_SECRET_KEY) {
     console.error("reserve: missing environment variables");
@@ -78,7 +86,31 @@ export async function handleReserve(request: Request, env: ReserveEnv, fetchImpl
     return jsonResponse({ error: "DB_UNAVAILABLE" }, 503);
   }
 
-  if (result.ok) return jsonResponse({ ok: true }, 201);
+  if (result.ok) {
+    const config = emailConfig(env);
+    if (config) {
+      const db = { NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY };
+      defer(
+        (async () => {
+          const [slot] = await selectRows<{ start_time: string }>(
+            db,
+            "time_slots",
+            `id=eq.${input.slotId}&select=start_time`,
+            fetchImpl,
+          );
+          if (!slot) throw new Error("slot not found");
+          const content = receivedEmail({
+            name: input.name,
+            date: input.date,
+            startTime: slot.start_time.slice(0, 5),
+            partySize: input.partySize,
+          });
+          await sendEmail(config, { ...content, to: input.email, idempotencyKey: `received/${result.data}` }, fetchImpl);
+        })().catch((err: unknown) => console.error("reserve: received email failed", err)),
+      );
+    }
+    return jsonResponse({ ok: true }, 201);
+  }
 
   const status = result.code === "P0001" && result.message ? businessErrors[result.message] : undefined;
   if (status) return jsonResponse({ error: result.message }, status);

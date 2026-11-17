@@ -11,6 +11,7 @@ import {
   laneFor,
   sql,
 } from "./support/db";
+import { mailTo } from "./support/mail";
 import { eachLocale, getDictionary, interpolateForTest, localePath } from "./support/i18n";
 
 const regularSlot = (locale: Parameters<typeof getDictionary>[0]) =>
@@ -55,6 +56,15 @@ eachLocale((locale) => {
       expect(sql(`select status || ',' || party_size || ',' || note from public.reservations where email = '${email}'`)).toBe(
         "pending,3,E2E note",
       );
+
+      // "Request received" email, sent in the background after the response.
+      await expect.poll(async () => (await mailTo(email)).length).toBe(1);
+      const [mail] = await mailTo(email);
+      expect(mail.subject).toBe("Reservation request received · 已收到訂位申請 – Morning Brew (demo)");
+      expect(mail.text).toContain("E2E Guest");
+      expect(mail.text).toContain("3 guests");
+      expect(mail.text).toContain("Demo project / fictional business");
+      expect(mail.idempotencyKey).toBe(`received/${sql(`select id from public.reservations where email = '${email}'`)}`);
     });
 
     test("field errors: localized messages, focus on the first invalid field, nothing sent", async ({ page }) => {
@@ -85,9 +95,10 @@ eachLocale((locale) => {
       const lane = laneFor(project, locale);
       const date = laneDate(lane);
       const { small } = fixtureSlots(lane);
+      const email = emailFor(`full-${locale}`, project);
       await page.goto(url("/reserve/"));
       await fillForm(page, f.labels, {
-        email: emailFor(`full-${locale}`, project),
+        email,
         date,
         slot: new RegExp(`^06:00${interpolateForTest(f.slotRemaining, "")}`),
       });
@@ -100,6 +111,7 @@ eachLocale((locale) => {
       await expect(formAlert(page)).toContainText(f.server.SLOT_FULL);
       await expect(page.getByRole("radio", { name: new RegExp(`^${interpolateForTest(f.slotNotEnough, "06:00")}`) })).toBeDisabled();
       await expect(page).toHaveURL(new RegExp(`${url("/reserve/")}$`));
+      expect(await mailTo(email)).toEqual([]);
     });
 
     test("Turnstile server check fails: localized message, nothing written", async ({ page }, testInfo) => {
@@ -115,6 +127,7 @@ eachLocale((locale) => {
 
       await expect(formAlert(page)).toContainText(f.server.TURNSTILE_FAILED);
       expect(sql(`select count(*) from public.reservations where email = '${email}'`)).toBe("0");
+      expect(await mailTo(email)).toEqual([]);
     });
   });
 });

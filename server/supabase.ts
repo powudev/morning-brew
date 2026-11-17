@@ -28,3 +28,17 @@ export async function rpc<T>(
   const err = (data ?? {}) as { code?: string; message?: string };
   return { ok: false, status: res.status, code: err.code, message: err.message };
 }
+
+/** GET rows through PostgREST with the service role. `query` is a PostgREST query string (without "?"). */
+export async function selectRows<T>(
+  env: Required<SupabaseEnv>,
+  table: string,
+  query: string,
+  fetchImpl: typeof fetch,
+): Promise<T[]> {
+  const res = await fetchImpl(`${env.NEXT_PUBLIC_SUPABASE_URL.replace(/\/$/, "")}/rest/v1/${table}?${query}`, {
+    headers: authHeaders(env.SUPABASE_SERVICE_ROLE_KEY),
+  });
+  if (!res.ok) throw new Error(`select ${table} responded ${res.status}`);
+  return (await res.json()) as T[];
+}

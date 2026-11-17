@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { handleReserve } from "@/server/reserve";
 import { env, json, mockFetch, RPC_URL, TURNSTILE_URL } from "@/server/test-helpers";
 
@@ -172,4 +172,100 @@ describe("handleReserve: misconfiguration", () => {
       expect(fetch).not.toHaveBeenCalled();
     });
   }
+});
+
+describe("handleReserve: received email", () => {
+  const MAIL_URL = "http://mail.test/emails";
+  const SLOT_URL = `${env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/time_slots`;
+  const emailEnv = { ...env, RESEND_API_KEY: "re_test", EMAIL_FROM: "Demo <demo@powu.test>", EMAIL_API_URL: "http://mail.test" };
+  const slotOk = () => json([{ start_time: "08:30:00" }]);
+
+  async function run(envOverride: typeof env, routes: Parameters<typeof mockFetch>[0], payload: unknown = body) {
+    const fetch = mockFetch(routes);
+    const deferred: Promise<unknown>[] = [];
+    const res = await handleReserve(post(payload), envOverride, fetch, (p) => deferred.push(p));
+    await Promise.all(deferred);
+    const mailCalls = fetch.mock.calls.filter(([u]) => String(u) === MAIL_URL);
+    return { res, fetch, mailCalls };
+  }
+
+  it("after a successful booking, emails the guest in the background (pending wording, slot time, idempotency key)", async () => {
+    const { res, mailCalls, fetch } = await run(emailEnv, {
+      [TURNSTILE_URL]: turnstileOk,
+      [RPC_URL("create_reservation")]: rpcOk,
+      [SLOT_URL]: slotOk,
+      [MAIL_URL]: () => json({ id: "e1" }),
+    });
+    expect(res.status).toBe(201);
+    const slotCall = fetch.mock.calls.find(([u]) => String(u).startsWith(SLOT_URL))!;
+    expect(String(slotCall[0])).toBe(`${SLOT_URL}?id=eq.3&select=start_time`);
+    expect(new Headers(slotCall[1]!.headers).get("apikey")).toBe("service-key");
+
+    expect(mailCalls).toHaveLength(1);
+    const init = mailCalls[0][1]!;
+    const sent = JSON.parse(init.body as string) as { to: string[]; subject: string; text: string };
+    expect(sent.to).toEqual(["demo@example.com"]);
+    expect(sent.subject).toMatch(/received/);
+    expect(sent.text).toContain("Demo Guest");
+    expect(sent.text).toContain("08:30");
+    expect(sent.text).toContain("2 guests");
+    expect(new Headers(init.headers).get("idempotency-key")).toBe("received/11111111-2222-3333-4444-555555555555");
+  });
+
+  it("without email settings, books as before and sends nothing", async () => {
+    const { res, fetch } = await run(env, { [TURNSTILE_URL]: turnstileOk, [RPC_URL("create_reservation")]: rpcOk });
+    expect(res.status).toBe(201);
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("an email failure is logged and the booking still returns 201", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { res, mailCalls } = await run(emailEnv, {
+      [TURNSTILE_URL]: turnstileOk,
+      [RPC_URL("create_reservation")]: rpcOk,
+      [SLOT_URL]: slotOk,
+      [MAIL_URL]: () => json({ message: "boom" }, 500),
+    });
+    expect(res.status).toBe(201);
+    expect(mailCalls).toHaveLength(1);
+    expect(log).toHaveBeenCalledWith("reserve: received email failed", expect.anything());
+    log.mockRestore();
+  });
+
+  it("if the slot time can't be read, no email is sent and the booking still returns 201", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { res, mailCalls } = await run(emailEnv, {
+      [TURNSTILE_URL]: turnstileOk,
+      [RPC_URL("create_reservation")]: rpcOk,
+      [SLOT_URL]: () => json([]),
+      [MAIL_URL]: () => json({ id: "e1" }),
+    });
+    expect(res.status).toBe(201);
+    expect(mailCalls).toHaveLength(0);
+    log.mockRestore();
+  });
+
+  it.each([
+    ["full slot (409)", () => json({ code: "P0001", message: "SLOT_FULL" }, 400), 409],
+    ["database down (503)", () => Promise.reject(new Error("down")), 503],
+  ])("sends nothing when the booking fails: %s", async (_label, rpc, status) => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { res, mailCalls } = await run(emailEnv, {
+      [TURNSTILE_URL]: turnstileOk,
+      [RPC_URL("create_reservation")]: rpc,
+      [MAIL_URL]: () => json({ id: "e1" }),
+    });
+    expect(res.status).toBe(status);
+    expect(mailCalls).toHaveLength(0);
+    log.mockRestore();
+  });
+
+  it("sends nothing when Turnstile fails", async () => {
+    const { res, mailCalls } = await run(emailEnv, {
+      [TURNSTILE_URL]: () => json({ success: false }),
+      [MAIL_URL]: () => json({ id: "e1" }),
+    });
+    expect(res.status).toBe(403);
+    expect(mailCalls).toHaveLength(0);
+  });
 });
